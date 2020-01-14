@@ -108,7 +108,7 @@ class Events
     {
         Gateway::sendToClient($client_id, 111);
         self::$db->query("call canteenConsumption(28,420,60,'BsaeoP2nmUyJ', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername)");
-        $resultSet = self::$db2->query("select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername");
+        $resultSet = self::$db->query("select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername");
         Gateway::sendToClient($client_id, json_encode($resultSet));
     }
 
