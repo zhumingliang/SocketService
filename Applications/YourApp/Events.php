@@ -45,7 +45,7 @@ class Events
     public static function onWorkerStart($worker)
     {
         self::$db = new \Workerman\MySQL\Connection('55a32a9887e03.gz.cdb.myqcloud.com',
-            '16273', 'cdb_outerroot', 'Libo1234', 'drive');
+            '16273', 'cdb_outerroot', 'Libo1234', 'canteen');
 
         self::$redis = new Redis();
         self::$redis->connect('127.0.0.1', 6379, 60);
@@ -89,61 +89,10 @@ class Events
                 return;
             }
             $type = $message['type'];
-            if ($type == 'location' && key_exists('locations', $message)) {
-                $locations = $message['locations'];
-                $current = array();
-                if (!empty($message['current'])) {
-                    $current = $message['current'];
-                }
-                $u_id = Gateway::getUidByClientId($client_id);
-                if (!$u_id) {
-                    Gateway::sendToClient($client_id, json_encode([
-                        'errorCode' => 1,
-                        'msg' => '用户信息没有和websocket绑定，需要重新绑定'
-                    ]));
-                    return;
-                }
-                $arr = explode('-', $u_id);
-                $u_id = $arr[1];
-                $version = 1;
-                if (!empty($message['version'])) {
-                    $version = $message['version'];
-                }
-                $location_ids = self::prefixLocation($version, $client_id, $u_id, $locations, $current);
-                Gateway::sendToClient($client_id, json_encode([
-                    'errorCode' => 0,
-                    'type' => 'uploadlocation',
-                    'msg' => 'success',
-                    'data' => $location_ids
-                ]));
-
-            } else if ($type == "receivePush") {
-                $p_id = $message['p_id'];
-                self::receivePush($p_id);
-            } else if ($type == "MINIPush") {
-                $id = $message['id'];
-                $u_id = $message['u_id'];
-                self::MINIPush($id, $u_id);
-            } else if ($type == 'checkOnline') {
-                if (self::checkOnline($client_id)) {
-                    Gateway::sendToClient($client_id, json_encode([
-                        'errorCode' => 0,
-                        'type' => 'checkOnline',
-                        'msg' => 'success'
-                    ]));
-                } else {
-                    Gateway::sendToClient($client_id, json_encode([
-                        'errorCode' => 1,
-                        'type' => 'checkOnline',
-                        'msg' => 'fail'
-                    ]));
-                }
-
-            } else if ($type == 'canteenConsumption') {
+            if ($type == 'canteenConsumption') {
                 self::canteenConsumption($client_id);
 
             }
-
         } catch (Exception $e) {
             Gateway::sendToClient($client_id, json_encode([
                 'errorCode' => 3,
@@ -155,140 +104,9 @@ class Events
 
     }
 
-    private static function checkOnline($client_id)
-    {
-        $u_id = Gateway::getUidByClientId($client_id);
-        if (!$u_id) {
-            return 0;
-        }
-        $arr = explode('-', $u_id);
-        $u_id = $arr[1];
-        return $u_id;
-
-    }
-
-    private static function receivePush($p_id)
-    {
-        self::$db->update('drive_order_push_t')->cols(array('receive' => 1))->where('id=' . $p_id)->query();
-
-    }
-
-    private static function MINIPush($id, $u_id)
-    {
-        self::$db->query("UPDATE `drive_mini_push_t` SET `state` = 3 WHERE o_id=" . $id . " AND u_id=" . $u_id);
-    }
-
-    private static function prefixLocation($version, $client_id, $u_id, $locations, $current)
-    {
-
-        $current_save = false;
-        if (!empty($current) && !empty($current['lat']) && !empty($current['lng'])) {
-            if ($version == 1) {
-                self::saveDriverCurrentLocationV2($client_id, $current['lat'], $current['lng'], $u_id);
-            } else {
-                self::saveDriverCurrentLocationV2($client_id, $current['lat'], $current['lng'], $u_id);
-            }
-            $current_save = true;
-        }
-        if (!count($locations)) {
-            Gateway::sendToClient($client_id, json_encode([
-                'errorCode' => 3,
-                'msg' => '地理位置信息不能为空'
-            ]));
-            return;
-        }
-
-        $location_ids = [];
-        foreach ($locations as $k => $v) {
-            array_push($location_ids, $v['locationId']);
-            if (!$current_save && $k == 0) {
-                if ($version == 1) {
-                    self::saveDriverCurrentLocationV2($client_id, $v['lat'], $v['lng'], $u_id);
-
-                } else {
-                    self::saveDriverCurrentLocationV2($client_id, $v['lat'], $v['lng'], $u_id);
-                }
-            }
-            self::$db->insert('drive_location_t')->cols(
-                array(
-                    'lat' => $v['lat'],
-                    'lng' => $v['lng'],
-                    'citycode' => $v['citycode'],
-                    'city' => $v['city'],
-                    'district' => $v['district'],
-                    'street' => $v['street'],
-                    'addr' => $v['addr'],
-                    'locationdescribe' => $v['locationdescribe'],
-                    'phone_code' => $v['phone_code'],
-                    'create_time' => $v['create_time'],
-                    'update_time' => $v['create_time'],
-                    'up_time' => date('Y-m-d H:i:s'),
-                    'baidu_time' => $v['createTime'],
-                    'location_id' => $v['locationId'],
-                    'loc_type' => $v['locType'],
-                    'o_id' => key_exists('o_id', $v) ? $v['o_id'] : '',
-                    'begin' => key_exists('begin', $v) ? $v['begin'] : 2,
-                    'u_id' => $u_id
-                )
-            )->query();
-
-        }
-        return implode(',', $location_ids);
-
-    }
-
-    private static function saveDriverCurrentLocationV1($client_id, $lat, $lng, $u_id)
-    {
-        //将地理位置存储到redis,并更新行动距离
-        //1.先删除旧的实时地理位置
-        self::$redis->rawCommand('zrem', 'drivers_tongling', $u_id);
-        //2.新增新的实时地理位置
-        $ret = self::$redis->rawCommand('geoadd', 'drivers_tongling', $lng, $lat, $u_id);
-        if (!$ret) {
-            Gateway::sendToClient($client_id, json_encode([
-                'errorCode' => 7,
-                'msg' => '写入redis失败'
-            ]));
-        }
-    }
-
-    private static function saveDriverCurrentLocationV2($client_id, $lat, $lng, $u_id)
-    {
-        //获取司机信息
-        $driver = self::getDriverInfo($u_id);
-        $company_id = empty($driver['company_id']) ? 1 : $driver['company_id'];
-        $save_location_key = "driver:location:$company_id";
-        //将地理位置存储到redis,并更新行动距离
-        //1.先删除旧的实时地理位置(driver:company_id:location)
-        self::$redis->rawCommand('zrem', $save_location_key, $u_id);
-        //2.新增新的实时地理位置
-        $ret = self::$redis->rawCommand('geoadd', $save_location_key, $lng, $lat, $u_id);
-        if (!$ret) {
-            Gateway::sendToClient($client_id, json_encode([
-                'errorCode' => 7,
-                'msg' => '写入redis失败'
-            ]));
-        }
-    }
-
-    private static function getDriverInfo($u_id)
-    {
-        $driver_id = 'driver:' . $u_id;
-        $driver = self::$redis->hMGet($driver_id, ['company_id', 'phone', 'username']);
-        if (empty($driver)) {
-            $driver = self::$db->select('id,username,number,company_id')
-                ->from('drive_driver_t')
-                ->where('id= :id')
-                ->bindValues(array('id' => $u_id))
-                ->row();
-        }
-        return $driver;
-    }
-
-
     private static function canteenConsumption($client_id)
     {
-        self::$db2->query("call canteenConsumption(28,420,60,'BsaeoP2nmUyJ', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername)");
+        self::$db->query("call canteenConsumption(28,420,60,'BsaeoP2nmUyJ', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername)");
         $resultSet = self::$db2->query("select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername");
         Gateway::sendToClient($client_id, json_encode($resultSet));
     }
