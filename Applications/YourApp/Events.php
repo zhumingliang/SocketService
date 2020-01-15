@@ -125,7 +125,6 @@ class Events
         $sql2 = "select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney";
         $sql = sprintf($sql, $company_id, $canteen_id, $code);
 
-        self::saveLog($sql);
         self::saveLog($sql2);
         self::$db->query($sql);
         $resultSet = self::$db->query($sql2);
@@ -140,6 +139,7 @@ class Events
         $username = $resultSet['@returnUsername'];
         $price = $resultSet['@returnPrice'];
         $money = $resultSet['@returnMoney'];
+        self::saveLog("code:".$errorCode);
         if (is_null($errorCode)) {
             return [
                 'errorCode' => 11000,
