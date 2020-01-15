@@ -83,22 +83,15 @@ class Events
 
         try {
             $message = json_decode($message, true);
-
-            if (empty( $message['token']) || empty($message['type'])) {
-                Gateway::sendToClient($client_id, json_encode([
-                    'errorCode' => 10000,
-                    'msg' => '数据格式异常'
-                ]));
+            if (empty($message['token']) || empty($message['type'])) {
+                self::returnData($client_id, 10000, '数据格式异常', 'canteen', []);
                 return;
             }
             $token = $message['token'];
             $cache = self::$redis->get($token);
             $cache = json_decode($cache, true);
             if (empty($cache) || empty($cache['company_id']) || empty($cache['belong_id'])) {
-                Gateway::sendToClient($client_id, json_encode([
-                    'errorCode' => 10001,
-                    'msg' => 'Token已过期或无效Token'
-                ]));
+                self::returnData($client_id, 10001, 'Token已过期或无效Token', 'canteen', []);
                 return;
             }
             $type = $message['type'];
@@ -107,13 +100,10 @@ class Events
                 $company_id = $cache['company_id'];
                 $canteen_id = $cache['belong_id'];
                 $returnData = self::canteenConsumption($company_id, $canteen_id, $code);
-                Gateway::sendToClient($client_id, json_encode($returnData));
+                self::returnData($client_id, $returnData['errorCode'], $returnData['msg'], 'canteen', $returnData['data']);
             }
         } catch (Exception $e) {
-            Gateway::sendToClient($client_id, json_encode([
-                'errorCode' => 3,
-                'msg' => $e->getMessage()
-            ]));
+            self::returnData($client_id, 3, $e->getMessage(), 'canteen', []);
         }
 
 
@@ -153,15 +143,20 @@ class Events
         }
         $remark = $consumptionType == 1 ? "订餐消费" : "未订餐消费";
         return [
-            'dinner' => $dinner,
-            'price' => $price,
-            'money' => $money,
-            'department' => $department,
-            'username' => $username,
-            'type' => $consumptionType,
-            'balance' => $balance,
-            'remark' => $remark,
-            'products' => self::getOrderProducts($orderID, $consumptionType)
+            'errorCode' => 0,
+            'msg' => "success",
+            'data' => [
+                'create_time' => date('Y-m-d H:i:s'),
+                'dinner' => $dinner,
+                'price' => $price,
+                'money' => $money,
+                'department' => $department,
+                'username' => $username,
+                'type' => $consumptionType,
+                'balance' => $balance,
+                'remark' => $remark,
+                'products' => self::getOrderProducts($orderID, $consumptionType)
+            ]
         ];
 
     }
@@ -198,8 +193,25 @@ class Events
          )->query();*/
     }
 
-    public static function saveLog($content){
+    public static function saveLog($content)
+    {
         self::$db->insert('canteen_log_t')->cols(array(
             'content' => $content))->query();
+    }
+
+    public static function returnData($client_id, $errorCode, $msg, $type, $data)
+    {
+        if (empty($data)) {
+            $data = [
+                'create_time' => date('Y-m-d H:i:s')
+            ];
+        }
+        $data = [
+            'errorCode' => $errorCode,
+            'msg' => $msg,
+            'type' => $type,
+            'data' => $data
+        ];
+        Gateway::sendToClient($client_id, json_encode($data));
     }
 }
