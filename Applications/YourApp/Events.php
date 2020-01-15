@@ -82,13 +82,9 @@ class Events
     {
 
         try {
-         /*   self::$db->insert('canteen_log_t')->cols(array(
-                'content' => $message))->query();*/
             $message = json_decode($message, true);
 
-            if (empty( $message['token']) ||empty($message['type'])) {
-                self::$db->insert('canteen_log_t')->cols(array(
-                    'content' =>222))->query();
+            if (empty( $message['token']) || empty($message['type'])) {
                 Gateway::sendToClient($client_id, json_encode([
                     'errorCode' => 10000,
                     'msg' => '数据格式异常'
@@ -128,6 +124,9 @@ class Events
         $sql = "call canteenConsumption(%s,%s,'%s', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney)";
         $sql2 = "select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney";
         $sql = sprintf($sql, $company_id, $canteen_id, $code);
+
+        self::saveLog($sql);
+        self::saveLog($sql2);
         self::$db->query($sql);
         $resultSet = self::$db->query($sql2);
 
@@ -198,5 +197,10 @@ class Events
                  'u_id' => self::checkOnline($client_id)
              )
          )->query();*/
+    }
+
+    public static function saveLog($content){
+        self::$db->insert('canteen_log_t')->cols(array(
+            'content' => $content))->query();
     }
 }
