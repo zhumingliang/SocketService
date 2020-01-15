@@ -140,6 +140,7 @@ class Events
         $price = $resultSet['@returnPrice'];
         $money = $resultSet['@returnMoney'];
         self::saveLog("code:".$errorCode);
+        self::saveLog("code:".$resultSet[0]['@resCode']);
         if (is_null($errorCode)) {
             return [
                 'errorCode' => 11000,
