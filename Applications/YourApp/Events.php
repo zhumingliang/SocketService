@@ -142,7 +142,7 @@ class Events
         $money = $resultSet['@returnMoney'];
         if (is_null($errorCode)) {
             return [
-                'errorCode' => 10000,
+                'errorCode' => 11000,
                 'msg' => "系统异常"
             ];
         }
