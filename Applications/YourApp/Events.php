@@ -82,6 +82,8 @@ class Events
     {
 
         try {
+            self::$db->insert('canteen_log_t')->cols(array(
+                'content'=>$message))->query();
             $message = json_decode($message, true);
             if (!key_exists('token', $message) || !key_exists('type', $message)) {
                 Gateway::sendToClient($client_id, json_encode([
