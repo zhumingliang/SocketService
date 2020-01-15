@@ -21,7 +21,6 @@
 //declare(ticks=1);
 
 use \GatewayWorker\Lib\Gateway;
-use think\Db;
 
 /**
  * 主逻辑
@@ -36,7 +35,6 @@ class Events
      * 新建一个类的静态成员，用来保存数据库实例
      */
     public static $db = null;
-    public static $db2 = null;
     public static $redis = null;
 
     /**
@@ -85,31 +83,98 @@ class Events
 
         try {
             $message = json_decode($message, true);
-            if (!key_exists('type', $message)) {
+            if (!key_exists('token', $message) || !key_exists('type', $message)) {
+                Gateway::sendToClient($client_id, json_encode([
+                    'errorCode' => 10000,
+                    'msg' => '数据格式异常'
+                ]));
+                return;
+            }
+            $token = $message['token'];
+            $cache = self::$redis->get($token);
+            $cache = json_decode($cache, true);
+            if (empty($cache) || empty($cache['company_id']) || empty($cache['belong_id'])) {
+                Gateway::sendToClient($client_id, json_encode([
+                    'errorCode' => 10001,
+                    'msg' => 'Token已过期或无效Token'
+                ]));
                 return;
             }
             $type = $message['type'];
-            if ($type == 'canteenConsumption') {
-                self::canteenConsumption($client_id);
-
+            if ($type == 'canteen') {
+                $code = $message['code'];
+                $company_id = $cache['company_id'];
+                $canteen_id = $cache['belong_id'];
+                $returnData = self::canteenConsumption($company_id, $canteen_id, $code);
+                Gateway::sendToClient($client_id, json_encode($returnData));
             }
         } catch (Exception $e) {
             Gateway::sendToClient($client_id, json_encode([
                 'errorCode' => 3,
                 'msg' => $e->getMessage()
             ]));
-            throw $e;
         }
 
 
     }
 
-    private static function canteenConsumption($client_id)
+    private static function canteenConsumption($company_id, $canteen_id, $code)
     {
-        Gateway::sendToClient($client_id, 111);
-        self::$db->query("call canteenConsumption(28,420,60,'BsaeoP2nmUyJ', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername)");
-        $resultSet = self::$db->query("select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername");
-        Gateway::sendToClient($client_id, json_encode($resultSet));
+        $sql = "call canteenConsumption(%s,%s,'%s', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney)";
+        $sql2 = "select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney";
+        $sql = sprintf($sql, $company_id, $canteen_id, $code);
+        self::$db->query($sql);
+        $resultSet = self::$db->query($sql2);
+
+        $errorCode = $resultSet['@resCode'];
+        $resMessage = $resultSet['@resMessage'];
+        $consumptionType = $resultSet['@currentConsumptionType'];
+        $orderID = $resultSet['@currentOrderID'];
+        $balance = $resultSet['@returnBalance'];
+        $dinner = $resultSet['@returnDinner'];
+        $department = $resultSet['@returnDepartment'];
+        $username = $resultSet['@returnUsername'];
+        $price = $resultSet['@returnPrice'];
+        $money = $resultSet['@returnMoney'];
+        if (is_null($errorCode)) {
+            return [
+                'errorCode' => 10000,
+                'msg' => "系统异常"
+            ];
+        }
+        if ($errorCode > 0) {
+            return [
+                'errorCode' => $errorCode,
+                'msg' => $resMessage
+            ];
+        }
+        $remark = $consumptionType == 1 ? "订餐消费" : "未订餐消费";
+        return [
+            'dinner' => $dinner,
+            'price' => $price,
+            'money' => $money,
+            'department' => $department,
+            'username' => $username,
+            'type' => $consumptionType,
+            'balance' => $balance,
+            'remark' => $remark,
+            'products' => self::getOrderProducts($orderID, $consumptionType)
+        ];
+
+    }
+
+    private static function getOrderProducts($order_id, $consumptionType)
+    {
+
+        $products = array();
+        if ($consumptionType == 2) {
+            return $products;
+        }
+        $products = self::$db->select('f_id as food_id ,count,name,price')->
+        from('canteen_order_detail_t')->where('o_id= :order_id AND state = :state')
+            ->bindValues(array('order_id' => $order_id, 'state' => 1))->query();
+        return $products;
+
     }
 
     /**
