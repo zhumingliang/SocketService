@@ -82,14 +82,13 @@ class Events
     {
 
         try {
-            self::$db->insert('canteen_log_t')->cols(array(
-                'content' => $message))->query();
+         /*   self::$db->insert('canteen_log_t')->cols(array(
+                'content' => $message))->query();*/
             $message = json_decode($message, true);
-            self::$db->insert('canteen_log_t')->cols(array(
-                'content' => "token:" . $message['token']))->query();
-            self::$db->insert('canteen_log_t')->cols(array(
-                'content' => "type:" . $message['type']))->query();
-            if (!key_exists('token', $message) || !key_exists('type', $message)) {
+
+            if (empty( $message['token']) ||empty($message['type'])) {
+                self::$db->insert('canteen_log_t')->cols(array(
+                    'content' =>222))->query();
                 Gateway::sendToClient($client_id, json_encode([
                     'errorCode' => 10000,
                     'msg' => '数据格式异常'
