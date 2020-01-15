@@ -129,18 +129,16 @@ class Events
         self::$db->query($sql);
         $resultSet = self::$db->query($sql2);
 
-        $errorCode = $resultSet['@resCode'];
-        $resMessage = $resultSet['@resMessage'];
-        $consumptionType = $resultSet['@currentConsumptionType'];
-        $orderID = $resultSet['@currentOrderID'];
-        $balance = $resultSet['@returnBalance'];
-        $dinner = $resultSet['@returnDinner'];
-        $department = $resultSet['@returnDepartment'];
-        $username = $resultSet['@returnUsername'];
-        $price = $resultSet['@returnPrice'];
-        $money = $resultSet['@returnMoney'];
-        self::saveLog("code:".$errorCode);
-        self::saveLog("code:".$resultSet[0]['@resCode']);
+        $errorCode = $resultSet[0]['@resCode'];
+        $resMessage = $resultSet[0]['@resMessage'];
+        $consumptionType = $resultSet[0]['@currentConsumptionType'];
+        $orderID = $resultSet[0]['@currentOrderID'];
+        $balance = $resultSet[0]['@returnBalance'];
+        $dinner = $resultSet[0]['@returnDinner'];
+        $department = $resultSet[0]['@returnDepartment'];
+        $username = $resultSet[0]['@returnUsername'];
+        $price = $resultSet[0]['@returnPrice'];
+        $money = $resultSet[0]['@returnMoney'];
         if (is_null($errorCode)) {
             return [
                 'errorCode' => 11000,
