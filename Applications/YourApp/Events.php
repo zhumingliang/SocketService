@@ -132,13 +132,19 @@ class Events
         if (is_null($errorCode)) {
             return [
                 'errorCode' => 11000,
-                'msg' => "系统异常"
+                'msg' => "系统异常",
+                'data' => [
+                    'username' => $username,
+                ]
             ];
         }
         if ($errorCode > 0) {
             return [
                 'errorCode' => $errorCode,
-                'msg' => $resMessage
+                'msg' => $resMessage,
+                'data' => [
+                    'username' => $username,
+                ]
             ];
         }
         $remark = $consumptionType == 1 ? "订餐消费" : "未订餐消费";
