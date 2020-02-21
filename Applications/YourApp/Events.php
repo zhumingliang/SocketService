@@ -85,7 +85,7 @@ class Events
             $message = json_decode($message, true);
             if (empty($message['token']) || empty($message['type'])) {
                 self::returnData($client_id, 10000, '数据格式异常', 'canteen', []);
-                return;
+                return ;
             }
             $token = $message['token'];
             $cache = self::$redis->get($token);
@@ -212,12 +212,12 @@ class Events
                 'create_time' => date('Y-m-d H:i:s')
             ];
         }
-        $returnData = [
+        $data = [
             'errorCode' => $errorCode,
             'msg' => $msg,
             'type' => $type,
             'data' => $data
         ];
-        Gateway::sendToClient($client_id, json_encode($returnData));
+        Gateway::sendToClient($client_id, json_encode($data));
     }
 }
