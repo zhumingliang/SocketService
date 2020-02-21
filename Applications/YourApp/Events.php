@@ -85,7 +85,7 @@ class Events
             $message = json_decode($message, true);
             if (empty($message['token']) || empty($message['type'])) {
                 self::returnData($client_id, 10000, '数据格式异常', 'canteen', []);
-                return ;
+                return;
             }
             $token = $message['token'];
             $cache = self::$redis->get($token);
@@ -132,19 +132,13 @@ class Events
         if (is_null($errorCode)) {
             return [
                 'errorCode' => 11000,
-                'msg' => "系统异常",
-                'data' => [
-                    'username' => $username
-                ]
+                'msg' => "系统异常"
             ];
         }
         if ($errorCode > 0) {
             return [
                 'errorCode' => $errorCode,
-                'msg' => $resMessage,
-                'data' => [
-                    'username' => $username,
-                ]
+                'msg' => $resMessage
             ];
         }
         $remark = $consumptionType == 1 ? "订餐消费" : "未订餐消费";
