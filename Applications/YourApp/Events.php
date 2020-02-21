@@ -212,12 +212,12 @@ class Events
                 'create_time' => date('Y-m-d H:i:s')
             ];
         }
-        $data = [
+        $returnData = [
             'errorCode' => $errorCode,
             'msg' => $msg,
             'type' => $type,
             'data' => $data
         ];
-        Gateway::sendToClient($client_id, json_encode($data));
+        Gateway::sendToClient($client_id, json_encode($returnData));
     }
 }
