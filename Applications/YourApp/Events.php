@@ -128,7 +128,7 @@ class Events
         $department = $resultSet[0]['@returnDepartment'];
         $username = $resultSet[0]['@returnUsername'];
         $price = $resultSet[0]['@returnPrice'];
-        $money = $resultSet[0]['@returnMoney'];
+        $money =  $resultSet[0]['@returnMoney'];
         if (is_null($errorCode)) {
             return [
                 'errorCode' => 11000,
