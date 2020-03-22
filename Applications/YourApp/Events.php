@@ -113,9 +113,8 @@ class Events
     {
         $sql = "call canteenConsumption(%s,%s,'%s', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney)";
         $sql2 = "select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney";
+        self::insertLog($sql);
         $sql = sprintf($sql, $company_id, $canteen_id, $code);
-
-        self::saveLog($sql2);
         self::$db->query($sql);
         $resultSet = self::$db->query($sql2);
 
@@ -128,7 +127,7 @@ class Events
         $department = $resultSet[0]['@returnDepartment'];
         $username = $resultSet[0]['@returnUsername'];
         $price = $resultSet[0]['@returnPrice'];
-        $money =  $resultSet[0]['@returnMoney'];
+        $money = $resultSet[0]['@returnMoney'];
         if (is_null($errorCode)) {
             return [
                 'errorCode' => 11000,
@@ -142,7 +141,7 @@ class Events
             ];
         }
         $remark = $consumptionType == 1 ? "订餐消费" : "未订餐消费";
-        return [
+        $returnData = [
             'errorCode' => 0,
             'msg' => "success",
             'data' => [
@@ -158,6 +157,8 @@ class Events
                 'products' => self::getOrderProducts($orderID, $consumptionType)
             ]
         ];
+        self::insertLog(json_encode($returnData));
+        return $returnData;
 
     }
 
@@ -213,5 +214,15 @@ class Events
             'data' => $data
         ];
         Gateway::sendToClient($client_id, json_encode($data));
+    }
+
+    public static function insertLog($content){
+         self::$db->insert('canteen_consumption_log_t')->cols(
+            array(
+                'create_time' => date('Y-m-d H:i:s'),
+                'update_time' => date('Y-m-d H:i:s'),
+                'content' => $content,
+            )
+        )->query();
     }
 }
