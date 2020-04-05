@@ -89,6 +89,12 @@ class Events
         try {
             $message = json_decode($message, true);
             if (empty($message['token']) || empty($message['type'])) {
+                if (!empty($message['type' == "jump"])) {
+                    $msg = empty($message['msg']) ? '' : empty($message['msg']);
+
+                    self::insertJumpLog($message);
+                    return '';
+                }
                 self::returnData($client_id, 10000, '数据格式异常', 'canteen', []);
                 return;
             }
@@ -234,6 +240,18 @@ class Events
     {
         $content = json_encode($content);
         self::$db->insert('canteen_consumption_log_t')->cols(
+            array(
+                'create_time' => date('Y-m-d H:i:s'),
+                'update_time' => date('Y-m-d H:i:s'),
+                'content' => $content,
+            )
+        )->query();
+    }
+
+    public static function insertJumpLog($content)
+    {
+        $content = json_encode($content);
+        self::$db->insert('canteen_consumption_jump_log_t')->cols(
             array(
                 'create_time' => date('Y-m-d H:i:s'),
                 'update_time' => date('Y-m-d H:i:s'),
