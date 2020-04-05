@@ -89,9 +89,7 @@ class Events
         try {
             $message = json_decode($message, true);
             if (empty($message['token']) || empty($message['type'])) {
-                if (!empty($message['type' == "jump"])) {
-                    $msg = empty($message['msg']) ? '' : empty($message['msg']);
-
+                if ($message['type'] == "jump") {
                     self::insertJumpLog($message);
                     return '';
                 }
