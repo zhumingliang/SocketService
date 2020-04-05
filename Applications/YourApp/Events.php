@@ -113,11 +113,15 @@ class Events
     {
         $sql = "call canteenConsumption(%s,%s,'%s', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney)";
         $sql2 = "select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney";
-        self::insertLog($sql);
         $sql = sprintf($sql, $company_id, $canteen_id, $code);
         self::$db->query($sql);
         $resultSet = self::$db->query($sql2);
-
+        //记录消费日志
+        $consu = [
+            'sql' => $sql,
+            'res' => $resultSet
+        ];
+        self::insertLog($consu);
         $errorCode = $resultSet[0]['@resCode'];
         $resMessage = $resultSet[0]['@resMessage'];
         $consumptionType = $resultSet[0]['@currentConsumptionType'];
@@ -157,7 +161,6 @@ class Events
                 'products' => self::getOrderProducts($orderID, $consumptionType)
             ]
         ];
-        self::insertLog(json_encode($returnData));
         return $returnData;
 
     }
@@ -192,6 +195,12 @@ class Events
                  'u_id' => self::checkOnline($client_id)
              )
          )->query();*/
+        $data = array(
+            'create_time' => date('Y-m-d H:i:s'),
+            'update_time' => date('Y-m-d H:i:s'),
+            'client_id' => $client_id
+        );
+        self::insertLog($data);
     }
 
     public static function saveLog($content)
@@ -213,11 +222,14 @@ class Events
             'type' => $type,
             'data' => $data
         ];
+        self::insertLog($data);
         Gateway::sendToClient($client_id, json_encode($data));
     }
 
-    public static function insertLog($content){
-         self::$db->insert('canteen_consumption_log_t')->cols(
+    public static function insertLog($content)
+    {
+        $content = json_encode($content);
+        self::$db->insert('canteen_consumption_log_t')->cols(
             array(
                 'create_time' => date('Y-m-d H:i:s'),
                 'update_time' => date('Y-m-d H:i:s'),
