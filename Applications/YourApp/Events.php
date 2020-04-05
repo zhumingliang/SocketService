@@ -70,6 +70,11 @@ class Events
             ]
 
         ];
+        $logData = array(
+            'type' => "login",
+            'client_id' => $client_id
+        );
+        self::insertLog($logData);
         Gateway::sendToClient($client_id, json_encode($data));
     }
 
@@ -196,8 +201,7 @@ class Events
              )
          )->query();*/
         $data = array(
-            'create_time' => date('Y-m-d H:i:s'),
-            'update_time' => date('Y-m-d H:i:s'),
+            'type' => 'closed',
             'client_id' => $client_id
         );
         self::insertLog($data);
