@@ -34,6 +34,13 @@ $gateway->startPort = 5000;
 // 服务注册地址
 $gateway->registerAddress = '127.0.0.1:1239';
 
+
+$gateway->pingInterval = 45;
+
+$gateway->pingNotResponseLimit = 1;
+
+$gateway->pingData = '';
+
 /*// 心跳间隔
 $gateway->pingInterval = 10;
 // 心跳数据
