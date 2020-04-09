@@ -106,17 +106,23 @@ class Events
             $type = $message['type'];
             if ($type == 'canteen') {
                 $code = $message['code'];
+                $check = self::$redis->get($code);
+                if ($check) {
+                    self::returnData($client_id, 11001, '8秒内不能重复刷卡', 'canteen', []);
+                    return;
+                }
                 $company_id = $cache['company_id'];
                 $canteen_id = $cache['belong_id'];
                 $returnData = self::canteenConsumption($company_id, $canteen_id, $code);
                 self::returnData($client_id, $returnData['errorCode'], $returnData['msg'], 'canteen', $returnData['data']);
+                self::$redis->set($code, $canteen_id, 8);
+
             }
         } catch (Exception $e) {
             self::returnData($client_id, 3, $e->getMessage(), 'canteen', []);
         }
-
-
     }
+
 
     private static function canteenConsumption($company_id, $canteen_id, $code)
     {
