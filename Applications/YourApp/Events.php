@@ -117,6 +117,11 @@ class Events
                 self::returnData($client_id, $returnData['errorCode'], $returnData['msg'], 'canteen', $returnData['data']);
                 self::$redis->set($code, $canteen_id, 8);
 
+            } else if ($type == 'sort') {
+                $webSocketCode = $message['websocketCode'];
+                (new \app\business\OrderBusiness())->checkWebSocketReceive(self::$redis, $webSocketCode);
+                return;
+
             }
         } catch (Exception $e) {
             self::returnData($client_id, 3, $e->getMessage(), 'canteen', []);
