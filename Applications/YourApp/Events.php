@@ -111,9 +111,10 @@ class Events
                     self::returnData($client_id, 11001, '8秒内不能重复刷卡', 'canteen', []);
                     return;
                 }
+                $face = empty($message['face']) ? 2 : $message['face'];
                 $company_id = $cache['company_id'];
                 $canteen_id = $cache['belong_id'];
-                $returnData = self::canteenConsumption($company_id, $canteen_id, $code);
+                $returnData = self::canteenConsumption($company_id, $canteen_id, $code, $face);
                 self::returnData($client_id, $returnData['errorCode'], $returnData['msg'], 'canteen', $returnData['data']);
                 self::$redis->set($code, $canteen_id, 8);
 
@@ -129,10 +130,15 @@ class Events
     }
 
 
-    private static function canteenConsumption($company_id, $canteen_id, $code)
+    private static function canteenConsumption($company_id, $canteen_id, $code, $face)
     {
-        $sql = "call canteenConsumption(%s,%s,'%s', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney)";
-        $sql2 = "select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney";
+        if ($face == 1) {
+            $sql = "call canteenFaceConsumption(%s,%s,'%s', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney)";
+
+        } else {
+            $sql2 = "select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney";
+        }
+
         $sql = sprintf($sql, $company_id, $canteen_id, $code);
         self::$db->query($sql);
         $resultSet = self::$db->query($sql2);
