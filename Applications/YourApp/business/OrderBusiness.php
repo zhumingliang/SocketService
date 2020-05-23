@@ -8,7 +8,6 @@ class OrderBusiness
     {
         $set = "webSocketReceiveCode";
         $redis->srem($set, $websocketCode);
-
     }
 
 }
