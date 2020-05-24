@@ -139,7 +139,6 @@ class Events
         } else {
             $sql = "call canteenConsumption(%s,%s,'%s', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney)";
         }
-        self::saveLog($sql);
         $sql = sprintf($sql, $company_id, $canteen_id, $code);
         $sql2 = "select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney";
         self::$db->query($sql);
@@ -189,7 +188,6 @@ class Events
                 'products' => self::getOrderProducts($orderID, $consumptionType)
             ]
         ];
-        self::saveLog(json_encode($returnData));
         return $returnData;
 
     }
