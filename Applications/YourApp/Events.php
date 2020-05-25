@@ -105,7 +105,6 @@ class Events
             }
             $type = $message['type'];
             if ($type == 'canteen') {
-                self::saveLog(json_encode($message));
                 $code = $message['code'];
                 $check = self::$redis->get($code);
                 if ($check) {
@@ -123,7 +122,18 @@ class Events
                 $webSocketCode = $message['websocketCode'];
                 (new \app\business\OrderBusiness())->checkWebSocketReceive(self::$redis, $webSocketCode);
                 return;
-
+            } else if ($type == "sortHandel") {
+                if (empty($message['orderId']) || empty($message['code']) || empty($message['codeType'])) {
+                    self::returnData($client_id, 11001, '参数异常，请检查', 'sortHandel', []);
+                    return;
+                }
+                if (in_array($message['codeType'], ['take', 'ready'])) {
+                    self::returnData($client_id, 11001, '操作参数异常，请检查', 'sortHandel', []);
+                    return;
+                }
+                $checkHandel = (new \app\business\OrderBusiness())->orderStatusHandel(self::$db, $message['orderId'], $message['code'], $message['codeType']);
+                self::returnData($client_id, $checkHandel['errorCode'], $checkHandel['msg'], 'sortHandel', []);
+                return;
             }
         } catch (Exception $e) {
             self::returnData($client_id, 3, $e->getMessage(), 'canteen', []);
@@ -143,12 +153,6 @@ class Events
         $sql2 = "select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney";
         self::$db->query($sql);
         $resultSet = self::$db->query($sql2);
-        //记录消费日志
-        $consu = [
-            'sql' => $sql,
-            'res' => $resultSet
-        ];
-        self::insertLog($consu);
         $errorCode = $resultSet[0]['@resCode'];
         $resMessage = $resultSet[0]['@resMessage'];
         $consumptionType = $resultSet[0]['@currentConsumptionType'];
