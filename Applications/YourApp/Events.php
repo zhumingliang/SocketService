@@ -127,7 +127,7 @@ class Events
                     self::returnData($client_id, 11001, '参数异常，请检查', 'sortHandel', []);
                     return;
                 }
-                if (in_array($message['codeType'], ['take', 'ready'])) {
+                if (!in_array($message['codeType'], ['take', 'ready'])) {
                     self::returnData($client_id, 11001, '操作参数异常，请检查', 'sortHandel', []);
                     return;
                 }
