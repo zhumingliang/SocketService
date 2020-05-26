@@ -319,9 +319,11 @@ class Events
                 ];
             }
 
-            $row_count = self::$db->update('canteen_order_t')->cols(array($codeType))
+         /*   $row_count = self::$db->update('canteen_order_t')->cols(array($codeType))
                 ->where('id=', $orderId)
-                ->bindValue($codeType, 1)->query();
+                ->bindValue($codeType, 1)->query();*/
+
+            $row_count = self::$db->update('canteen_order_t')->cols(array($codeType=>1))->where('id='.$orderId)->query();
             if (!$row_count) {
                 return [
                     'errorCode' => 12003,
