@@ -21,6 +21,7 @@
 //declare(ticks=1);
 
 use \GatewayWorker\Lib\Gateway;
+use  app\business\OrderBusiness;
 
 /**
  * 主逻辑
@@ -120,7 +121,7 @@ class Events
 
             } else if ($type == 'sort') {
                 $webSocketCode = $message['websocketCode'];
-                (new \app\business\OrderBusiness())->checkWebSocketReceive(self::$redis, $webSocketCode);
+                (new OrderBusiness())->checkWebSocketReceive(self::$redis, $webSocketCode);
                 return;
             } else if ($type == "sortHandel") {
                 if (empty($message['orderId']) || empty($message['code']) || empty($message['codeType'])) {
@@ -131,7 +132,7 @@ class Events
                     self::returnData($client_id, 11001, '操作参数异常，请检查', 'sortHandel', []);
                     return;
                 }
-                $checkHandel = (new \app\business\OrderBusiness())->orderStatusHandel(self::$db, $message['orderId'], $message['code'], $message['codeType']);
+                $checkHandel = (new OrderBusiness())->orderStatusHandel(self::$db, $message['orderId'], $message['code'], $message['codeType']);
                 self::returnData($client_id, $checkHandel['errorCode'], $checkHandel['msg'], 'sortHandel', []);
                 return;
             }
