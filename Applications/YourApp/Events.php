@@ -132,7 +132,9 @@ class Events
                     self::returnData($client_id, 11001, '操作参数异常，请检查', 'sortHandel', []);
                     return;
                 }
+                self::saveLog(1);
                 $checkHandel = (new OrderBusiness())->orderStatusHandel(self::$db, $message['orderId'], $message['code'], $message['codeType']);
+                self::saveLog(json_encode($checkHandel));
                 self::returnData($client_id, $checkHandel['errorCode'], $checkHandel['msg'], 'sortHandel', []);
                 return;
             }
