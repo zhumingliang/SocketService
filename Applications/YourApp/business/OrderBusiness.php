@@ -13,8 +13,6 @@ class OrderBusiness
     public function orderStatusHandel($db, $orderId, $code, $codeType)
     {
         try {
-
-
             $db->insert('canteen_consumption_log_t')->cols(
                 array(
                     'create_time' => date('Y-m-d H:i:s'),

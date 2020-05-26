@@ -121,7 +121,7 @@ class Events
 
             } else if ($type == 'sort') {
                 $webSocketCode = $message['websocketCode'];
-                (new OrderBusiness())->checkWebSocketReceive(self::$redis, $webSocketCode);
+                self::checkWebSocketReceive(self::$redis, $webSocketCode);
                 return;
             } else if ($type == "sortHandel") {
                 if (empty($message['orderId']) || empty($message['code']) || empty($message['codeType'])) {
@@ -132,9 +132,9 @@ class Events
                     self::returnData($client_id, 11001, '操作参数异常，请检查', 'sortHandel', []);
                     return;
                 }
-                self::saveLog(1);
-                $checkHandel = (new OrderBusiness())->orderStatusHandel(self::$db, $message['orderId'], $message['code'], $message['codeType']);
-                self::saveLog(json_encode($checkHandel));
+
+               // $checkHandel = (new OrderBusiness())->orderStatusHandel(self::$db, $message['orderId'], $message['code'], $message['codeType']);
+                $checkHandel = self::orderStatusHandel( $message['orderId'], $message['code'], $message['codeType']);
                 self::returnData($client_id, $checkHandel['errorCode'], $checkHandel['msg'], 'sortHandel', []);
                 return;
             }
@@ -282,4 +282,61 @@ class Events
             )
         )->query();
     }
+
+    public static function checkWebSocketReceive($websocketCode)
+    {
+        $set = "webSocketReceiveCode";
+        self::$redis->srem($set, $websocketCode);
+    }
+
+    public static function orderStatusHandel( $orderId, $code, $codeType)
+    {
+        try {
+            $errMsg = [
+                'take' => '取餐失败，二维码不正确',
+                'ready' => '备餐失败，二维码不正确'
+            ];
+            $order = self::$db->select('id,ready_code,take_code,take,ready')->
+            from('canteen_order_t')->where('id= :orderId')
+                ->bindValues(array('orderId' => $orderId))->row();
+            if (empty($order)) {
+                return [
+                    'errorCode' => 12000,
+                    'msg' => "订单不存在"
+                ];
+            }
+            if ($order["$codeType" . '_code'] != $code) {
+                return [
+                    'errorCode' => 12001,
+                    'msg' => $errMsg[$codeType]
+                ];
+            }
+            if ($order[$codeType] == 1) {
+                return [
+                    'errorCode' => 12002,
+                    'msg' => "状态已经修改，无需重复操作"
+                ];
+            }
+
+            $row_count = self::$db->update('canteen_order_t')->cols(array($codeType))
+                ->where('id=', $orderId)
+                ->bindValue($codeType, 1)->query();
+            if (!$row_count) {
+                return [
+                    'errorCode' => 12003,
+                    'msg' => "更新状态失败"
+                ];
+            }
+            return [
+                'errorCode' => 0,
+                'msg' => "success"
+            ];
+        } catch (\Exception $e) {
+            return [
+                'errorCode' => 12004,
+                'msg' => $e->getMessage()
+            ];
+        }
+    }
+
 }
