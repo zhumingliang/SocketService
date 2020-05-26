@@ -133,9 +133,10 @@ class Events
                     return;
                 }
 
-               // $checkHandel = (new OrderBusiness())->orderStatusHandel(self::$db, $message['orderId'], $message['code'], $message['codeType']);
-                $checkHandel = self::orderStatusHandel( $message['orderId'], $message['code'], $message['codeType']);
-                self::returnData($client_id, $checkHandel['errorCode'], $checkHandel['msg'], 'sortHandel', []);
+                // $checkHandel = (new OrderBusiness())->orderStatusHandel(self::$db, $message['orderId'], $message['code'], $message['codeType']);
+                $checkHandel = self::orderStatusHandel($message['orderId'], $message['code'], $message['codeType']);
+                self::returnData($client_id, $checkHandel['errorCode'], $checkHandel['msg'], 'sortHandel',
+                    ['orderId' => $message['orderId'], 'codeType' => $message['codeType']]);
                 return;
             }
         } catch (Exception $e) {
@@ -289,7 +290,7 @@ class Events
         self::$redis->srem($set, $websocketCode);
     }
 
-    public static function orderStatusHandel( $orderId, $code, $codeType)
+    public static function orderStatusHandel($orderId, $code, $codeType)
     {
         try {
             $errMsg = [
