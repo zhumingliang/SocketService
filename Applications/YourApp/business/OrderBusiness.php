@@ -12,6 +12,13 @@ class OrderBusiness
 
     public function orderStatusHandel($db, $orderId, $code, $codeType)
     {
+        $db->insert('canteen_consumption_log_t')->cols(
+            array(
+                'create_time' => date('Y-m-d H:i:s'),
+                'update_time' => date('Y-m-d H:i:s'),
+                'content' => 1,
+            )
+        )->query();
 
         $errMsg = [
             'take' => '取餐失败，二维码不正确',
@@ -20,6 +27,14 @@ class OrderBusiness
         $order = $db->select('id,ready_code,take_code,take,ready')->
         from('canteen_order_t')->where('id= :orderId')
             ->bindValues(array('orderId' => $orderId))->row();
+
+        $db->insert('canteen_consumption_log_t')->cols(
+            array(
+                'create_time' => date('Y-m-d H:i:s'),
+                'update_time' => date('Y-m-d H:i:s'),
+                'content' => json_encode($order),
+            )
+        )->query();
         if (empty($order)) {
             return [
                 'errorCode' => 12000,
