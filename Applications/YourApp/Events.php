@@ -148,13 +148,13 @@ class Events
     private static function canteenConsumption($company_id, $canteen_id, $code, $face)
     {
         if ($face == 1) {
-            $sql = "call canteenFaceConsumption(%s,%s,'%s', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney)";
+            $sql = "call canteenFaceConsumption(%s,%s,'%s', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount)";
 
         } else {
-            $sql = "call canteenConsumption(%s,%s,'%s', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney)";
+            $sql = "call canteenConsumption(%s,%s,'%s', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount)";
         }
         $sql = sprintf($sql, $company_id, $canteen_id, $code);
-        $sql2 = "select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney";
+        $sql2 = "select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount";
         self::$db->query($sql);
         $resultSet = self::$db->query($sql2);
         $errorCode = $resultSet[0]['@resCode'];
@@ -167,6 +167,7 @@ class Events
         $username = $resultSet[0]['@returnUsername'];
         $price = $resultSet[0]['@returnPrice'];
         $money = $resultSet[0]['@returnMoney'];
+        $count = $resultSet[0]['@returnCount'];
         if (is_null($errorCode)) {
             return [
                 'errorCode' => 11000,
@@ -188,6 +189,7 @@ class Events
                 'dinner' => $dinner,
                 'price' => $price,
                 'money' => $money,
+                'count' => $count,
                 'department' => $department,
                 'username' => $username,
                 'type' => $consumptionType,
