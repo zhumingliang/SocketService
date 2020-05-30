@@ -121,7 +121,7 @@ class Events
 
             } else if ($type == 'sort') {
                 $webSocketCode = $message['websocketCode'];
-                self::checkWebSocketReceive(self::$redis, $webSocketCode);
+                self::checkWebSocketReceive($webSocketCode);
                 return;
             } else if ($type == "sortHandel") {
                 if (empty($message['orderId']) || empty($message['code']) || empty($message['codeType'])) {
