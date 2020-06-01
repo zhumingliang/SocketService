@@ -102,7 +102,7 @@ class Events
             $company_id = $cache['company_id'];
             $canteen_id = $cache['belong_id'];
             $type = $message['type'];
-            self::saveLog($message);
+            self::saveConsumptionLog($message);
             switch ($type) {
                 case "canteen"://处理饭堂消费
                     $code = $message['code'];
@@ -119,7 +119,6 @@ class Events
                     self::clearSort($message['data']);
                     break;
             }
-            self::saveLog($message);
         } catch (Exception $e) {
             self::returnData($client_id, 3, $e->getMessage(), 'canteen', []);
         }
@@ -258,12 +257,7 @@ class Events
                  'client_id' => $client_id,
                  'u_id' => self::checkOnline($client_id)
              )
-         )->query();*/
-        $data = array(
-            'type' => 'closed',
-            'client_id' => $client_id
-        );
-        self::insertLog($data);
+         )->query();*/self::insertLog();
     }
 
     public static function saveLog($content)
@@ -274,6 +268,15 @@ class Events
             'update_time' => date('Y-m-d H:i:s')
         );
         self::$db->insert('canteen_log_t')->cols($data)->query();
+    }
+ public static function saveConsumptionLog($content)
+    {
+        $data = array(
+            'content' => $content,
+            'create_time' => date('Y-m-d H:i:s'),
+            'update_time' => date('Y-m-d H:i:s')
+        );
+        self::$db->insert('canteen_consumption_log_t')->cols($data)->query();
     }
 
     public static function returnData($client_id, $errorCode, $msg, $type, $data)
@@ -290,18 +293,6 @@ class Events
             'data' => $data
         ];
         Gateway::sendToClient($client_id, json_encode($data));
-    }
-
-    public static function insertLog($content)
-    {
-        $content = json_encode($content);
-        self::$db->insert('canteen_consumption_log_t')->cols(
-            array(
-                'create_time' => date('Y-m-d H:i:s'),
-                'update_time' => date('Y-m-d H:i:s'),
-                'content' => $content,
-            )
-        )->query();
     }
 
     public static function insertJumpLog($content)
