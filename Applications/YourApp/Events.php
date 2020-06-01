@@ -383,7 +383,6 @@ class Events
         from('canteen_order_t')->leftjoin('canteen_dinner_t', 'canteen_order_t.d_id=canteen_dinner_t.id')
             ->where('canteen_order_t.wx_confirm = 1 and  canteen_order_t.take=2')
             ->query();
-        self::saveLog(json_encode($orders));
         if (!count($orders)) {
             return true;
         }
@@ -410,12 +409,11 @@ class Events
             'ready' => 1,
             'take' => 1
         ];
-        if (count($ids)) {
-            $whereIds = explode(',', $ids);
+        if (!empty($ids)) {
             $row_count = self::$db->update('canteen_order_t')->cols($updateData)
-                ->where('id in (' . $whereIds . ')')
+                ->where('id in (' . $ids . ')')
                 ->query();
-            self::saveLog($whereIds);
+            self::saveLog($ids);
         }
 
     }
