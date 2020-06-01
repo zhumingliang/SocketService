@@ -21,7 +21,6 @@
 //declare(ticks=1);
 
 use \GatewayWorker\Lib\Gateway;
-use  app\business\OrderBusiness;
 
 /**
  * 主逻辑
@@ -49,9 +48,16 @@ class Events
         self::$redis = new Redis();
         self::$redis->connect('127.0.0.1', 6379, 60);
 
+        if ($worker->id === 0) {
+            // $time_interval = 60 * 60 * 2;
+            $time_interval = 60;
+            \Workerman\Lib\Timer::add($time_interval, function () use ($worker) {
+                self::handelOrderUnTake();
+            });
+        }
+
 
     }
-
 
     /**
      * 当客户端连接时触发
@@ -89,61 +95,77 @@ class Events
 
         try {
             $message = json_decode($message, true);
-            if (empty($message['token']) || empty($message['type'])) {
-                if ($message['type'] == "jump") {
-                    self::insertJumpLog($message);
-                    return '';
-                }
-                self::returnData($client_id, 10000, '数据格式异常', 'canteen', []);
-                return;
-            }
-            $token = $message['token'];
-            $cache = self::$redis->get($token);
-            $cache = json_decode($cache, true);
-            if (empty($cache) || empty($cache['company_id']) || empty($cache['belong_id'])) {
-                self::returnData($client_id, 10001, 'Token已过期或无效Token', 'canteen', []);
+            $cache = self::checkMessage($client_id, $message);
+            $company_id = $cache['company_id'];
+            $canteen_id = $cache['belong_id'];
+            if (!$cache) {
                 return;
             }
             $type = $message['type'];
-            if ($type == 'canteen') {
-                $code = $message['code'];
-                $check = self::$redis->get($code);
-                if ($check) {
-                    self::returnData($client_id, 11001, '8秒内不能重复刷卡', 'canteen', []);
-                    return;
-                }
-                $face = empty($message['face']) ? 2 : $message['face'];
-                $company_id = $cache['company_id'];
-                $canteen_id = $cache['belong_id'];
-                $returnData = self::canteenConsumption($company_id, $canteen_id, $code, $face);
-                self::returnData($client_id, $returnData['errorCode'], $returnData['msg'], 'canteen', $returnData['data']);
-                self::$redis->set($code, $canteen_id, 8);
-
-            } else if ($type == 'sort') {
-                $webSocketCode = $message['websocketCode'];
-                self::checkWebSocketReceive($webSocketCode);
-                return;
-            } else if ($type == "sortHandel") {
-                if (empty($message['orderId']) || empty($message['code']) || empty($message['codeType'])) {
-                    self::returnData($client_id, 11001, '参数异常，请检查', 'sortHandel', []);
-                    return;
-                }
-                if (!in_array($message['codeType'], ['take', 'ready'])) {
-                    self::returnData($client_id, 11001, '操作参数异常，请检查', 'sortHandel', []);
-                    return;
-                }
-
-                // $checkHandel = (new OrderBusiness())->orderStatusHandel(self::$db, $message['orderId'], $message['code'], $message['codeType']);
-                $checkHandel = self::orderStatusHandel($message['orderId'], $message['code'], $message['codeType']);
-                self::returnData($client_id, $checkHandel['errorCode'], $checkHandel['msg'], 'sortHandel',
-                    ['orderId' => $message['orderId'], 'codeType' => $message['codeType']]);
-                return;
+            switch ($type) {
+                case "canteen"://处理饭堂消费
+                    $code = $message['code'];
+                    self::prefixCanteen($client_id, $code, $company_id, $canteen_id);
+                    break;
+                case "sort"://接受确认消费排序消费
+                    $webSocketCode = $message['websocketCode'];
+                    self::checkWebSocketReceive($webSocketCode);
+                    break;
+                case "sortHandel"://处理确认就餐状态码
+                    self::prefixSortHandel($client_id, $message);
+                    break;
             }
         } catch (Exception $e) {
             self::returnData($client_id, 3, $e->getMessage(), 'canteen', []);
         }
     }
 
+    public static function prefixSortHandel($client_id, $message)
+    {
+        if (empty($message['orderId']) || empty($message['code']) || empty($message['codeType'])) {
+            self::returnData($client_id, 11001, '参数异常，请检查', 'sortHandel', []);
+        }
+        if (!in_array($message['codeType'], ['take', 'ready'])) {
+            self::returnData($client_id, 11001, '操作参数异常，请检查', 'sortHandel', []);
+        }
+
+        $checkHandel = self::orderStatusHandel($message['orderId'], $message['code'], $message['codeType']);
+        self::returnData($client_id, $checkHandel['errorCode'], $checkHandel['msg'], 'sortHandel',
+            ['orderId' => $message['orderId'], 'codeType' => $message['codeType']]);
+    }
+
+    private static function prefixCanteen($client_id, $code, $company_id, $canteen_id)
+    {
+        $check = self::$redis->get($code);
+        if ($check) {
+            self::returnData($client_id, 11001, '8秒内不能重复刷卡', 'canteen', []);
+            return;
+        }
+        $face = empty($message['face']) ? 2 : $message['face'];
+        $returnData = self::canteenConsumption($company_id, $canteen_id, $code, $face);
+        self::returnData($client_id, $returnData['errorCode'], $returnData['msg'], 'canteen', $returnData['data']);
+        self::$redis->set($code, $canteen_id, 8);
+    }
+
+    //检测数据合法性
+    private static function checkMessage($client_id, $message)
+    {
+        if (empty($message['token']) || empty($message['type'])) {
+            if ($message['type'] == "jump") {
+                //self::insertJumpLog($message);
+                return false;
+            }
+            self::returnData($client_id, 10000, '数据格式异常', 'canteen', []);
+            return false;
+        }
+        $token = $message['token'];
+        $cache = self::$redis->get($token);
+        $cache = json_decode($cache, true);
+        if (empty($cache) || empty($cache['company_id']) || empty($cache['belong_id'])) {
+            self::returnData($client_id, 10001, 'Token已过期或无效Token', 'canteen', []);
+            return false;
+        }
+    }
 
     private static function canteenConsumption($company_id, $canteen_id, $code, $face)
     {
@@ -321,11 +343,11 @@ class Events
                 ];
             }
 
-         /*   $row_count = self::$db->update('canteen_order_t')->cols(array($codeType))
-                ->where('id=', $orderId)
-                ->bindValue($codeType, 1)->query();*/
+            /*   $row_count = self::$db->update('canteen_order_t')->cols(array($codeType))
+                   ->where('id=', $orderId)
+                   ->bindValue($codeType, 1)->query();*/
 
-            $row_count = self::$db->update('canteen_order_t')->cols(array($codeType=>1))->where('id='.$orderId)->query();
+            $row_count = self::$db->update('canteen_order_t')->cols(array($codeType => 1))->where('id=' . $orderId)->query();
             if (!$row_count) {
                 return [
                     'errorCode' => 12003,
@@ -342,6 +364,21 @@ class Events
                 'msg' => $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * 处理确认消费订单-已确认但是未取餐和未备餐（超出就餐时间）
+     */
+    public static function handelOrderUnTake()
+    {
+        self::saveLog("begin");
+
+        //获取所有确认消费但未备餐或者未取餐订单
+        $orders = self::$db->select('canteen_order_t.id,canteen_order_t.d_id,canteen_dinner_t.meal_time_end')->
+        from('canteen_order_t')->leftjoin('canteen_dinner_t', 'canteen_order_t.d_id=canteen_dinner_t.id')
+            ->where('canteen_order_t.wx_confirm = 1 and  canteen_order_t.take=2')
+            ->row();
+        self::saveLog(json_encode($orders));
     }
 
 }
