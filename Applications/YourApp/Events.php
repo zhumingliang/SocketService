@@ -102,6 +102,7 @@ class Events
             $company_id = $cache['company_id'];
             $canteen_id = $cache['belong_id'];
             $type = $message['type'];
+            self::saveLog($message);
             switch ($type) {
                 case "canteen"://处理饭堂消费
                     $code = $message['code'];
@@ -115,7 +116,7 @@ class Events
                     self::prefixSortHandel($client_id, $message);
                     break;
                 case "clearSort"://处理确认就餐状态异常订单
-                    self::clearSort($message['data'] );
+                    self::clearSort($message['data']);
                     break;
             }
             self::saveLog($message);
@@ -405,15 +406,19 @@ class Events
 
     public function clearSort($ids)
     {
+        self::saveLog(json_encode($ids));
         $updateData = [
             'ready' => 1,
             'take' => 1
         ];
-        if (!empty($ids)) {
-            $row_count = self::$db->update('canteen_order_t')->cols($updateData)
-                ->where('id in (' . $ids . ')')
-                ->query();
-            self::saveLog($ids);
+        $idArr = explode(',', $ids);
+        if (count($idArr)) {
+            foreach ($idArr as $k => $v) {
+                $row_count = self::$db->update('canteen_order_t')->cols($updateData)
+                    ->where('id=' . $v)
+                    ->query();
+            }
+
         }
 
     }
