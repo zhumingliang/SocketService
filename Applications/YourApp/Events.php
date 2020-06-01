@@ -377,7 +377,7 @@ class Events
         $orders = self::$db->select('canteen_order_t.id,canteen_order_t.d_id,canteen_dinner_t.meal_time_end')->
         from('canteen_order_t')->leftjoin('canteen_dinner_t', 'canteen_order_t.d_id=canteen_dinner_t.id')
             ->where('canteen_order_t.wx_confirm = 1 and  canteen_order_t.take=2')
-            ->row();
+            ->query();
         self::saveLog(json_encode($orders));
     }
 
