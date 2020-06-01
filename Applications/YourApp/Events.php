@@ -52,7 +52,6 @@ class Events
             // $time_interval = 60 * 60 * 2;
             $time_interval = 60;
             \Workerman\Lib\Timer::add($time_interval, function () use ($worker) {
-                self::saveLog(12);
                 self::handelOrderUnTake();
             });
         }
@@ -265,8 +264,12 @@ class Events
 
     public static function saveLog($content)
     {
-        self::$db->insert('canteen_log_t')->cols(array(
-            'content' => $content))->query();
+        $data = array(
+            'content' => $content,
+            'create_time'=>date('Y-m-d H:i:s'),
+            'update_time'=>date('Y-m-d H:i:s')
+        );
+        self::$db->insert('canteen_log_t')->cols($data)->query();
     }
 
     public static function returnData($client_id, $errorCode, $msg, $type, $data)
@@ -373,10 +376,8 @@ class Events
      */
     public static function handelOrderUnTake()
     {
-        self::saveLog("begin");
-
         //获取所有确认消费但未备餐或者未取餐订单
-        $orders = self::$db->select('canteen_order_t.id,canteen_order_t.d_id,canteen_dinner_t.meal_time_end')->
+        $orders = self::$db->select('canteen_order_t.id,canteen_order_t.d_id,canteen_order_t.ordering_date,canteen_dinner_t.meal_time_end')->
         from('canteen_order_t')->leftjoin('canteen_dinner_t', 'canteen_order_t.d_id=canteen_dinner_t.id')
             ->where('canteen_order_t.wx_confirm = 1 and  canteen_order_t.take=2')
             ->query();
@@ -387,7 +388,9 @@ class Events
         self::saveLog(1);
         $idArr = [];
         foreach ($orders as $k => $v) {
-            if (time() > strtotime($v['meal_time_end'])) {
+            $end_time = $v['ordering_date'] . ' ' . $v['meal_time_end'];
+            self::saveLog($end_time);
+            if (time() > strtotime($end_time)) {
                 array_push($idArr, $v['id']);
             }
         }
