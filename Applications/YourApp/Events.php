@@ -48,13 +48,13 @@ class Events
         self::$redis = new Redis();
         self::$redis->connect('127.0.0.1', 6379, 60);
 
-        if ($worker->id === 0) {
-            // $time_interval = 60 * 60 * 2;
-            $time_interval = 60;
-            \Workerman\Lib\Timer::add($time_interval, function () use ($worker) {
-                self::handelOrderUnTake();
-            });
-        }
+        /*    if ($worker->id === 0) {
+                // $time_interval = 60 * 60 * 2;
+                $time_interval = 60;
+                \Workerman\Lib\Timer::add($time_interval, function () use ($worker) {
+                    self::handelOrderUnTake();
+                });
+            }*/
 
 
     }
@@ -94,6 +94,7 @@ class Events
     {
 
         try {
+            self::saveLog($message);
             $message = json_decode($message, true);
             $cache = self::checkMessage($client_id, $message);
             $company_id = $cache['company_id'];
@@ -373,11 +374,11 @@ class Events
     {
 
         //获取所有确认消费但未备餐或者未取餐订单
-        $orders = self::$db->select('canteen_order_t.id,canteen_order_t.d_id,canteen_dinner_t.meal_time_end')->
+        $orders = self::$db->select('canteen_order_t.id,canteen_order_t.d_id,canteen_dinner_t.meal_time_end,c.id as machine_id')->
         from('canteen_order_t')->leftjoin('canteen_dinner_t', 'canteen_order_t.d_id=canteen_dinner_t.id')
+            ->leftjoin('canteen_machine_t', 'canteen_order_t.c_id=canteen_machine_t.belong_id and  canteen_machine_t.sort_code = 1 AND canteen_machine_t.state =1 and machine_type="canteen"')
             ->where('canteen_order_t.wx_confirm = 1 and  canteen_order_t.take=2')
             ->query();
         //self::saveLog(json_encode($orders));
     }
-
 }
