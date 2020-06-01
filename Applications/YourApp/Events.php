@@ -415,7 +415,7 @@ class Events
             $row_count = self::$db->update('canteen_order_t')->cols($updateData)
                 ->where('id in (' . $whereIds . ')')
                 ->query();
-            self::saveLog($row_count);
+            self::saveLog($whereIds);
         }
 
     }
