@@ -97,11 +97,11 @@ class Events
             self::saveLog($message);
             $message = json_decode($message, true);
             $cache = self::checkMessage($client_id, $message);
-            $company_id = $cache['company_id'];
-            $canteen_id = $cache['belong_id'];
             if (!$cache) {
                 return;
             }
+            $company_id = $cache['company_id'];
+            $canteen_id = $cache['belong_id'];
             $type = $message['type'];
             switch ($type) {
                 case "canteen"://处理饭堂消费
@@ -166,6 +166,7 @@ class Events
             self::returnData($client_id, 10001, 'Token已过期或无效Token', 'canteen', []);
             return false;
         }
+        return $cache;
     }
 
     private static function canteenConsumption($company_id, $canteen_id, $code, $face)
