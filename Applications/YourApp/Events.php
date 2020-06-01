@@ -48,13 +48,13 @@ class Events
         self::$redis = new Redis();
         self::$redis->connect('127.0.0.1', 6379, 60);
 
-        /*    if ($worker->id === 0) {
-                // $time_interval = 60 * 60 * 2;
-                $time_interval = 60;
-                \Workerman\Lib\Timer::add($time_interval, function () use ($worker) {
-                    self::handelOrderUnTake();
-                });
-            }*/
+        if ($worker->id === 0) {
+            // $time_interval = 60 * 60 * 2;
+            $time_interval = 60;
+            \Workerman\Lib\Timer::add($time_interval, function () use ($worker) {
+                self::handelOrderUnTake();
+            });
+        }
 
 
     }
@@ -94,11 +94,10 @@ class Events
     {
 
         try {
-            self::saveLog($message);
             $message = json_decode($message, true);
             $cache = self::checkMessage($client_id, $message);
             if (!$cache) {
-                return;
+                return false;
             }
             $company_id = $cache['company_id'];
             $canteen_id = $cache['belong_id'];
@@ -116,6 +115,7 @@ class Events
                     self::prefixSortHandel($client_id, $message);
                     break;
             }
+            self::saveLog($message);
         } catch (Exception $e) {
             self::returnData($client_id, 3, $e->getMessage(), 'canteen', []);
         }
@@ -153,7 +153,6 @@ class Events
     {
         if (empty($message['token']) || empty($message['type'])) {
             if ($message['type'] == "jump") {
-                //self::insertJumpLog($message);
                 return false;
             }
             self::returnData($client_id, 10000, '数据格式异常', 'canteen', []);
@@ -375,11 +374,19 @@ class Events
     {
 
         //获取所有确认消费但未备餐或者未取餐订单
-        $orders = self::$db->select('canteen_order_t.id,canteen_order_t.d_id,canteen_dinner_t.meal_time_end,c.id as machine_id')->
+        $orders = self::$db->select('canteen_order_t.id,canteen_order_t.d_id,canteen_dinner_t.meal_time_end')->
         from('canteen_order_t')->leftjoin('canteen_dinner_t', 'canteen_order_t.d_id=canteen_dinner_t.id')
-            ->leftjoin('canteen_machine_t', 'canteen_order_t.c_id=canteen_machine_t.belong_id and  canteen_machine_t.sort_code = 1 AND canteen_machine_t.state =1 and machine_type="canteen"')
             ->where('canteen_order_t.wx_confirm = 1 and  canteen_order_t.take=2')
             ->query();
-        //self::saveLog(json_encode($orders));
+        if (!count($orders)) {
+            return true;
+        }
+        $idArr = [];
+        foreach ($orders as $k => $v) {
+            if (time() > strtotime($v['meal_time_end'])) {
+                array_push($idArr, $v['id']);
+            }
+        }
+        self::saveLog(implode(',', $idArr));
     }
 }
