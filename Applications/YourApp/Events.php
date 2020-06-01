@@ -52,6 +52,7 @@ class Events
             // $time_interval = 60 * 60 * 2;
             $time_interval = 60;
             \Workerman\Lib\Timer::add($time_interval, function () use ($worker) {
+                self::saveLog(12);
                 self::handelOrderUnTake();
             });
         }
