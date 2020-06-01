@@ -114,6 +114,9 @@ class Events
                 case "sortHandel"://处理确认就餐状态码
                     self::prefixSortHandel($client_id, $message);
                     break;
+                case "clearSort"://处理确认就餐状态异常订单
+                    self::clearSort($message['data'] );
+                    break;
             }
             self::saveLog($message);
         } catch (Exception $e) {
@@ -399,5 +402,21 @@ class Events
             'data' => $idArr
         ];
         Gateway::sendToAll(json_encode($data));
+    }
+
+    public function clearSort($ids)
+    {
+        $updateData = [
+            'ready' => 1,
+            'take' => 1
+        ];
+        if (count($ids)) {
+            $whereIds = explode(',', $ids);
+            $row_count = self::$db->update('canteen_order_t')->cols($updateData)
+                ->where('id in (' . $whereIds . ')')
+                ->query();
+            self::saveLog($row_count);
+        }
+
     }
 }
