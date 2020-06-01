@@ -378,9 +378,11 @@ class Events
         from('canteen_order_t')->leftjoin('canteen_dinner_t', 'canteen_order_t.d_id=canteen_dinner_t.id')
             ->where('canteen_order_t.wx_confirm = 1 and  canteen_order_t.take=2')
             ->query();
+        self::saveLog(json_encode($orders));
         if (!count($orders)) {
             return true;
         }
+        self::saveLog(1);
         $idArr = [];
         foreach ($orders as $k => $v) {
             if (time() > strtotime($v['meal_time_end'])) {
