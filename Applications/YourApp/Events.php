@@ -266,8 +266,8 @@ class Events
     {
         $data = array(
             'content' => $content,
-            'create_time'=>date('Y-m-d H:i:s'),
-            'update_time'=>date('Y-m-d H:i:s')
+            'create_time' => date('Y-m-d H:i:s'),
+            'update_time' => date('Y-m-d H:i:s')
         );
         self::$db->insert('canteen_log_t')->cols($data)->query();
     }
@@ -285,7 +285,6 @@ class Events
             'type' => $type,
             'data' => $data
         ];
-        self::insertLog($data);
         Gateway::sendToClient($client_id, json_encode($data));
     }
 
@@ -385,15 +384,20 @@ class Events
         if (!count($orders)) {
             return true;
         }
-        self::saveLog(1);
         $idArr = [];
         foreach ($orders as $k => $v) {
             $end_time = $v['ordering_date'] . ' ' . $v['meal_time_end'];
-            self::saveLog($end_time);
             if (time() > strtotime($end_time)) {
                 array_push($idArr, $v['id']);
             }
         }
-        self::saveLog(implode(',', $idArr));
+
+        $data = [
+            'errorCode' => 0,
+            'msg' => "success",
+            'type' => "clearSort",
+            'data' => $idArr
+        ];
+        Gateway::sendToAll(json_encode($data));
     }
 }
