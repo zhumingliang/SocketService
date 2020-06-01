@@ -372,6 +372,7 @@ class Events
      */
     public static function handelOrderUnTake()
     {
+        self::saveLog("begin");
 
         //获取所有确认消费但未备餐或者未取餐订单
         $orders = self::$db->select('canteen_order_t.id,canteen_order_t.d_id,canteen_dinner_t.meal_time_end')->
