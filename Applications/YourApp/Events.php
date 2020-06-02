@@ -48,13 +48,13 @@ class Events
         self::$redis = new Redis();
         self::$redis->connect('127.0.0.1', 6379, 60);
 
-        if ($worker->id === 0) {
+      /*  if ($worker->id === 0) {
             // $time_interval = 60 * 60 * 2;
             $time_interval = 60;
             \Workerman\Lib\Timer::add($time_interval, function () use ($worker) {
                 self::handelOrderUnTake();
             });
-        }
+        }*/
 
 
     }
@@ -81,7 +81,6 @@ class Events
             'type' => "login",
             'client_id' => $client_id
         );
-        self::insertLog($logData);
         Gateway::sendToClient($client_id, json_encode($data));
     }
 
