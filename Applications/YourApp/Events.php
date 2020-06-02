@@ -397,15 +397,9 @@ class Events
             'ready' => 1,
             'take' => 1
         ];
-        $idArr = explode(',', $ids);
-        if (count($idArr)) {
-            foreach ($idArr as $k => $v) {
-                $row_count = self::$db->update('canteen_order_t')->cols($updateData)
-                    ->where('id=' . $v)
-                    ->query();
-            }
-
-        }
+        $row_count = self::$db->update('canteen_order_t')->cols($updateData)
+            ->where('id in (' . $ids . ' )')
+            ->query();
 
     }
 }
