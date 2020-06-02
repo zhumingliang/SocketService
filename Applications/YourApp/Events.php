@@ -398,7 +398,7 @@ class Events
             'take' => 1
         ];
         $row_count = self::$db->update('canteen_order_t')->cols($updateData)
-            ->where('id in (' . $ids . ' )')
+            ->where('id='.$ids)
             ->query();
 
     }
