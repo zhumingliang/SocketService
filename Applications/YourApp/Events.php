@@ -111,6 +111,7 @@ class Events
                     self::prefixSortHandel($client_id, $message);
                     break;
                 case "clearSort"://处理确认就餐状态异常订单
+                    self::saveLog($message['data']);
                     self::clearSort($message['data']);
                     break;
             }
@@ -398,7 +399,7 @@ class Events
             'take' => 1
         ];
         $row_count = self::$db->update('canteen_order_t')->cols($updateData)
-            ->where('id='.$ids)
+            ->where('id in（ ' . $ids . ' )')
             ->query();
 
     }
