@@ -404,12 +404,6 @@ class Events
                     ->query();
             }
         }
-        $data = [
-            'errorCode' => 0,
-            'msg' => 'success',
-            'type' => 'clearSort',
-        ];
-        Gateway::sendToClient($client_id, json_encode($data));
 
     }
 }
