@@ -397,16 +397,20 @@ class Events
             'ready' => 1,
             'take' => 1
         ];
-        $row_count = self::$db->update('canteen_order_t')->cols($updateData)
-            ->where('id in（ ' . $ids . ' )')
-            ->query();
-        if ($row_count) {
-            $data = [
-                'errorCode' => 0,
-                'msg' => 'success',
-                'type' => 'clearSort',
-            ];
-            Gateway::sendToClient($client_id, json_encode($data));
+        $idArr = explode(',', $ids);
+        if (count($idArr)) {
+            foreach ($idArr as $k => $v) {
+                self::$db->update('canteen_order_t')->cols($updateData)
+                    ->where('id=' . $v)
+                    ->query();
+            }
         }
+        $data = [
+            'errorCode' => 0,
+            'msg' => 'success',
+            'type' => 'clearSort',
+        ];
+        Gateway::sendToClient($client_id, json_encode($data));
+
     }
 }
