@@ -48,13 +48,13 @@ class Events
         self::$redis = new Redis();
         self::$redis->connect('127.0.0.1', 6379, 60);
 
-      /*  if ($worker->id === 0) {
+        if ($worker->id === 0) {
             // $time_interval = 60 * 60 * 2;
             $time_interval = 60;
             \Workerman\Lib\Timer::add($time_interval, function () use ($worker) {
                 self::handelOrderUnTake();
             });
-        }*/
+        }
 
 
     }
@@ -77,10 +77,6 @@ class Events
             ]
 
         ];
-        $logData = array(
-            'type' => "login",
-            'client_id' => $client_id
-        );
         Gateway::sendToClient($client_id, json_encode($data));
     }
 
@@ -101,7 +97,7 @@ class Events
             $company_id = $cache['company_id'];
             $canteen_id = $cache['belong_id'];
             $type = $message['type'];
-            self::saveConsumptionLog($message);
+            self::saveConsumptionLog(json_encode($message));
             switch ($type) {
                 case "canteen"://处理饭堂消费
                     $code = $message['code'];
@@ -256,7 +252,7 @@ class Events
                  'client_id' => $client_id,
                  'u_id' => self::checkOnline($client_id)
              )
-         )->query();*/self::insertLog();
+         )->query();*/
     }
 
     public static function saveLog($content)
@@ -268,7 +264,8 @@ class Events
         );
         self::$db->insert('canteen_log_t')->cols($data)->query();
     }
- public static function saveConsumptionLog($content)
+
+    public static function saveConsumptionLog($content)
     {
         $data = array(
             'content' => $content,
@@ -396,7 +393,6 @@ class Events
 
     public function clearSort($ids)
     {
-        self::saveLog(json_encode($ids));
         $updateData = [
             'ready' => 1,
             'take' => 1
