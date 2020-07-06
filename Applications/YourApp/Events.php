@@ -36,6 +36,8 @@ class Events
      */
     public static $db = null;
     public static $redis = null;
+    public static $http = null;
+
 
     /**
      * 进程启动后初始化数据库连接
@@ -47,6 +49,7 @@ class Events
 
         self::$redis = new Redis();
         self::$redis->connect('127.0.0.1', 6379, 60);
+        self::$http = new Workerman\Http\Client();
 
         if ($worker->id === 0) {
             $time_interval = 60 * 60 * 2;
@@ -168,6 +171,7 @@ class Events
 
     private static function canteenConsumption($company_id, $canteen_id, $code, $face)
     {
+
         if ($face == 1) {
             $sql = "call canteenFaceConsumption(%s,%s,'%s', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount)";
 
@@ -201,6 +205,16 @@ class Events
                 'msg' => $resMessage
             ];
         }
+        //更新订单排队等信息
+        $sortCode = 0;
+        $showCode = 2;
+        if ($company_id == 95) {
+            $sortCode = self::prefixSort($company_id, $canteen_id, $dinner, $orderID);
+            //发送打印机
+            $showCode = 1;
+            self::sendPrinter($canteen_id, $orderID, $sortCode);
+        }
+
         $remark = $consumptionType == 1 ? "订餐消费" : "未订餐消费";
         $returnData = [
             'errorCode' => 0,
@@ -216,6 +230,8 @@ class Events
                 'type' => $consumptionType,
                 'balance' => $balance,
                 'remark' => $remark,
+                'sortCode' => $sortCode,
+                'showCode' => $showCode,
                 'products' => self::getOrderProducts($orderID, $consumptionType)
             ]
         ];
@@ -407,4 +423,65 @@ class Events
         }
 
     }
+
+    public static function getRandChar($length)
+    {
+        $str = null;
+        $strPol = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz";
+        $max = strlen($strPol) - 1;
+
+        for ($i = 0;
+             $i < $length;
+             $i++) {
+            $str .= $strPol[rand(0, $max)];
+        }
+
+        return $str;
+    }
+
+    public static function saveRedisOrderCode($canteen_id, $dinner_id)
+    {
+        $day = date('Y-m-d');
+        $key = "$canteen_id:$dinner_id:$day";
+        $code = self::$redis->get($key);
+        if (!$code) {
+            $code = 1;
+            self::$redis->set($key, $code, 60 * 60 * 24);
+        }
+        self::$redis->incr($key);
+        return str_pad($code, 4, "0", STR_PAD_LEFT);
+    }
+
+    private static function prefixSort($company_id, $canteen_id, $dinner_id, $order_id)
+    {
+        $readyCode = self::getRandChar(8);
+        $takeCode = self::getRandChar(8);
+        $sortCode = self::saveRedisOrderCode($canteen_id, $dinner_id);
+        $row_count = self::$db->update('canteen_order_t')
+            ->cols(array('sort_code' => $sortCode,
+                'ready_code' => $readyCode,
+                'take_code' => $takeCode,
+                'qrcode_url' => "$order_id&$takeCode&$sortCode"
+            ))
+            ->where("id=$order_id")
+            ->query();
+        return $sortCode;
+    }
+
+    private static function sendPrinter($canteenID, $orderID, $sortCode)
+    {
+        $params = [
+            'canteenID' => $canteenID,
+            'orderID' => $orderID,
+            'sortCode' => $sortCode
+        ];
+        $rule = "http://canteen.tonglingok.com/api/v1/serice/printer";
+        self::$http->post($rule, $params, function ($response) {
+            self::saveLog("打印成功:" . $response->getBody());
+        }, function ($exception) {
+            self::saveLog("打印失败：" . $exception);
+
+        });
+    }
+
 }
