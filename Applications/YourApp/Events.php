@@ -460,7 +460,8 @@ class Events
             ->cols(array('sort_code' => $sortCode,
                 'ready_code' => $readyCode,
                 'take_code' => $takeCode,
-                'qrcode_url' => "$order_id&$takeCode&$sortCode"
+                'qrcode_url' => "$order_id&$takeCode&$sortCode",
+                "confirm_time"=> date('Y-m-d H:i:s')
             ))
             ->where("id=$order_id")
             ->query();
@@ -474,7 +475,7 @@ class Events
             'orderID' => $orderID,
             'sortCode' => $sortCode
         ];
-        $rule = "http://canteen.tonglingok.com/api/v1/serice/printer";
+        $rule = "http://canteen.tonglingok.com/api/v1/service/printer";
         self::$http->post($rule, $params, function ($response) {
             self::saveLog("打印成功:" . $response->getBody());
         }, function ($exception) {
