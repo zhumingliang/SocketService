@@ -49,7 +49,7 @@ class Events
 
         self::$redis = new Redis();
         self::$redis->connect('127.0.0.1', 6379, 60);
-        self::$http = new Workerman\Http\Client();
+       // self::$http = new Workerman\Http\Client();
         if ($worker->id === 0) {
             $time_interval = 60 * 60 * 2;
             // $time_interval = 60;
@@ -211,7 +211,7 @@ class Events
             $sortCode = self::prefixSort($company_id, $canteen_id, $dinner, $orderID);
             //发送打印机
             $showCode = 1;
-            self::sendPrinter($canteen_id, $orderID, $sortCode);
+           // self::sendPrinter($canteen_id, $orderID, $sortCode);
         }
 
         $remark = $consumptionType == 1 ? "订餐消费" : "未订餐消费";
