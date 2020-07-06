@@ -460,7 +460,7 @@ class Events
             ->cols(array('sort_code' => $sortCode,
                 'ready_code' => $readyCode,
                 'take_code' => $takeCode,
-                'qrcode_url' => "$order_id&$takeCode&$sortCode",
+                'qrcode_url' => "$order_id&$readyCode&$takeCode",
                 "confirm_time"=> date('Y-m-d H:i:s')
             ))
             ->where("id=$order_id")
