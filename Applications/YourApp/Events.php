@@ -207,7 +207,7 @@ class Events
         //更新订单排队等信息
         $sortCode = 0;
         $showCode = 2;
-        if ($company_id == 95) {
+        if ($company_id == 95 || $company_id = 69) {
             $sortCode = self::prefixSort($company_id, $canteen_id, $dinner, $orderID);
             //发送打印机
             $showCode = 1;
