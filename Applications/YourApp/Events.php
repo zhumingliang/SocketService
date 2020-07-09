@@ -92,10 +92,10 @@ class Events
 
         try {
             $message = json_decode($message, true);
-            $cache = self::checkMessage($client_id, $message);
+          /*  $cache = self::checkMessage($client_id, $message);
             if (!$cache) {
                 return false;
-            }
+            }*/
             $company_id = $cache['company_id'];
             $canteen_id = $cache['belong_id'];
             $type = $message['type'];
