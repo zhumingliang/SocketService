@@ -509,7 +509,8 @@ class Events
             return '';
         }
 
-        $row_count = self::$db->update('canteen_reception_qrcode_t')->cols(array('status' => 1))
+        $row_count = self::$db->update('canteen_reception_qrcode_t')
+            ->cols(array('status' => 1,'used_time'=>date('Y-m-d H:i:s')))
             ->where('code=' . $code)->query();
         if (!$row_count) {
             $data = [
