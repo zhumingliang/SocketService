@@ -500,8 +500,7 @@ class Events
             return '';
         }
 
-        self::saveLog($reception['status']);
-        if ($reception['status'] == 1) {
+        if ($reception[0]['status'] == 1) {
             $data = [
                 'errorCode' => 12101,
                 'msg' => "接待票已使用"
