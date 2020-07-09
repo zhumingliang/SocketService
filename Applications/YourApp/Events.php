@@ -114,6 +114,8 @@ class Events
                     break;
                 case "clearSort"://处理确认就餐状态异常订单
                     self::clearSort($client_id, $message['data']);
+                case "reception"://处理确认就餐状态异常订单
+                    self::prefixReception($client_id, $message['code']);
                     break;
             }
         } catch (Exception $e) {
@@ -461,7 +463,7 @@ class Events
                 'ready_code' => $readyCode,
                 'take_code' => $takeCode,
                 'qrcode_url' => "$order_id&$readyCode&$takeCode",
-                "confirm_time"=> date('Y-m-d H:i:s')
+                "confirm_time" => date('Y-m-d H:i:s')
             ))
             ->where("id=$order_id")
             ->query();
@@ -483,5 +485,48 @@ class Events
 
         });
     }
+
+    public static function prefixReception($client_id, $code)
+    {
+        $reception = self::$db->select('id,code,status')->
+        from('canteen_reception_qrcode_t')->where("code=$code")
+            ->query();
+        if (!$reception) {
+            $data = [
+                'errorCode' => 120100,
+                'msg' => "接待票不存在"
+            ];
+            Gateway::sendToClient($client_id, json_encode($data));
+            return '';
+        }
+
+        if ($reception['status'] == 1) {
+            $data = [
+                'errorCode' => 1201001,
+                'msg' => "接待票已使用"
+            ];
+            Gateway::sendToClient($client_id, json_encode($data));
+            return '';
+        }
+
+        $row_count = self::$db->update('canteen_reception_qrcode_t')->cols(array('status' => 1))
+            ->where('code=' . $code)->query();
+        if (!$row_count) {
+            $data = [
+                'errorCode' => 12003,
+                'msg' => "更新状态失败"
+            ];
+            Gateway::sendToClient($client_id, json_encode($data));
+            return '';
+        }
+        $data = [
+            'errorCode' => 0,
+            'type' => "reception",
+            'msg' => "success"
+        ];
+        Gateway::sendToClient($client_id, json_encode($data));
+
+    }
+
 
 }
