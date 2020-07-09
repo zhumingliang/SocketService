@@ -493,16 +493,17 @@ class Events
             ->query();
         if (!$reception) {
             $data = [
-                'errorCode' => 120100,
+                'errorCode' => 12100,
                 'msg' => "接待票不存在"
             ];
             Gateway::sendToClient($client_id, json_encode($data));
             return '';
         }
 
+        self::saveLog($reception['status']);
         if ($reception['status'] == 1) {
             $data = [
-                'errorCode' => 1201001,
+                'errorCode' => 12101,
                 'msg' => "接待票已使用"
             ];
             Gateway::sendToClient($client_id, json_encode($data));
