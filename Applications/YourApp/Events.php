@@ -92,10 +92,10 @@ class Events
 
         try {
             $message = json_decode($message, true);
-          /*  $cache = self::checkMessage($client_id, $message);
+            $cache = self::checkMessage($client_id, $message);
             if (!$cache) {
                 return false;
-            }*/
+            }
             $company_id = $cache['company_id'];
             $canteen_id = $cache['belong_id'];
             $type = $message['type'];
@@ -510,7 +510,7 @@ class Events
         }
 
         $row_count = self::$db->update('canteen_reception_qrcode_t')
-            ->cols(array('status' => 1,'used_time'=>date('Y-m-d H:i:s')))
+            ->cols(array('status' => 1, 'used_time' => date('Y-m-d H:i:s')))
             ->where('code=' . $code)->query();
         if (!$row_count) {
             $data = [
