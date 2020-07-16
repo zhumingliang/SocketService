@@ -44,9 +44,14 @@ class Events
      */
     public static function onWorkerStart($worker)
     {
-        self::$db = new \Workerman\MySQL\Connection('55a32a9887e03.gz.cdb.myqcloud.com',
-            '16273', 'cdb_outerroot', 'Libo1234', 'canteen');
+        $mysql = DataBase::mysql();
+        $redisConfig = DataBase::redis();
+        self::$db = new \Workerman\MySQL\Connection($mysql['hostname'],
+            $mysql['hostport'], $mysql['username'], $mysql['password'], $mysql['']);
+        /*  self::$db = new \Workerman\MySQL\Connection('55a32a9887e03.gz.cdb.myqcloud.com',
+                    '16273', 'cdb_outerroot', 'Libo1234', 'canteen');*/
 
+        self::saveLog('test');
         self::$redis = new Redis();
         self::$redis->connect('127.0.0.1', 6379, 60);
         self::$http = new \Workerman\Http\Client();
