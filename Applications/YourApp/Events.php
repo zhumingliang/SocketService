@@ -47,7 +47,7 @@ class Events
         $mysql = DataBase::mysql();
         $redisConfig = DataBase::redis();
         self::$db = new \Workerman\MySQL\Connection($mysql['hostname'],
-            $mysql['hostport'], $mysql['username'], $mysql['password'], $mysql['']);
+            $mysql['hostport'], $mysql['username'], $mysql['password'], $mysql['database']);
         /*  self::$db = new \Workerman\MySQL\Connection('55a32a9887e03.gz.cdb.myqcloud.com',
                     '16273', 'cdb_outerroot', 'Libo1234', 'canteen');*/
 
