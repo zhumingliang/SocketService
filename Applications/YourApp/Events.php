@@ -51,9 +51,10 @@ class Events
         /*  self::$db = new \Workerman\MySQL\Connection('55a32a9887e03.gz.cdb.myqcloud.com',
                     '16273', 'cdb_outerroot', 'Libo1234', 'canteen');*/
 
-        self::saveLog('test');
         self::$redis = new Redis();
-        self::$redis->connect('127.0.0.1', 6379, 60);
+        self::$redis->connect($redisConfig['host'], $redisConfig['port'], 60);
+        self::$redis->auth('auth');
+
         self::$http = new \Workerman\Http\Client();
         if ($worker->id === 0) {
             $time_interval = 60 * 60 * 2;
@@ -97,6 +98,9 @@ class Events
 
         try {
             $message = json_decode($message, true);
+            if ($message['type'] == "test") {
+                self::test($client_id);
+            }
             $cache = self::checkMessage($client_id, $message);
             if (!$cache) {
                 return false;
@@ -122,10 +126,21 @@ class Events
                 case "reception"://处理确认就餐状态异常订单
                     self::prefixReception($client_id, $message['code']);
                     break;
+                case "test":
+                    self::test($client_id);
+                    break;
             }
         } catch (Exception $e) {
             self::returnData($client_id, 3, $e->getMessage(), 'canteen', []);
         }
+    }
+
+    public static function test($client_id)
+    {
+
+        self::$redis->set('name', 'zml');
+        $name = self::$redis->get('name');
+        Gateway::sendToClient($client_id, $name);
     }
 
     public static function prefixSortHandel($client_id, $message)
