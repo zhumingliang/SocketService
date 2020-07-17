@@ -497,7 +497,9 @@ class Events
             'orderID' => $orderID,
             'sortCode' => $sortCode
         ];
-        $rule = "http://canteen.tonglingok.com/api/v1/service/printer";
+        $config = Config::param();
+        $domain = $config['domain'];
+        $rule = "$domain/api/v1/service/printer";
         self::$http->post($rule, $params, function ($response) {
             self::saveLog("打印成功:" . $response->getBody());
         }, function ($exception) {
