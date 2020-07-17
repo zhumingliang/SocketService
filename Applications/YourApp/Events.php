@@ -107,12 +107,13 @@ class Events
             }
             $company_id = $cache['company_id'];
             $canteen_id = $cache['belong_id'];
+            $showCode = $cache['sort_code'];
             $type = $message['type'];
             self::saveConsumptionLog(json_encode($message));
             switch ($type) {
                 case "canteen"://处理饭堂消费
                     $code = $message['code'];
-                    self::prefixCanteen($client_id, $code, $company_id, $canteen_id);
+                    self::prefixCanteen($client_id, $code, $company_id, $canteen_id, $showCode);
                     break;
                 case "sort"://接受确认消费排序消费
                     $webSocketCode = $message['websocketCode'];
@@ -123,7 +124,7 @@ class Events
                     break;
                 case "clearSort"://处理确认就餐状态异常订单
                     self::clearSort($client_id, $message['data']);
-                case "reception"://处理确认就餐状态异常订单
+                case "reception"://确认就餐
                     self::prefixReception($client_id, $message['code']);
                     break;
                 case "test":
@@ -157,7 +158,7 @@ class Events
             ['orderId' => $message['orderId'], 'codeType' => $message['codeType']]);
     }
 
-    private static function prefixCanteen($client_id, $code, $company_id, $canteen_id)
+    private static function prefixCanteen($client_id, $code, $company_id, $canteen_id, $showCode)
     {
         $check = self::$redis->get($code);
         if ($check) {
@@ -165,7 +166,7 @@ class Events
             return;
         }
         $face = empty($message['face']) ? 2 : $message['face'];
-        $returnData = self::canteenConsumption($company_id, $canteen_id, $code, $face);
+        $returnData = self::canteenConsumption($company_id, $canteen_id, $code, $face, $showCode);
         self::returnData($client_id, $returnData['errorCode'], $returnData['msg'], 'canteen', $returnData['data']);
         self::$redis->set($code, $canteen_id, 8);
     }
@@ -190,7 +191,7 @@ class Events
         return $cache;
     }
 
-    private static function canteenConsumption($company_id, $canteen_id, $code, $face)
+    private static function canteenConsumption($company_id, $canteen_id, $code, $face, $showCode)
     {
 
         if ($face == 1) {
@@ -228,11 +229,9 @@ class Events
         }
         //更新订单排队等信息
         $sortCode = 0;
-        $showCode = 2;
-        if ($company_id == 95 || $company_id = 69) {
+        if ($showCode == 1) {
             $sortCode = self::prefixSort($company_id, $canteen_id, $dinner, $orderID);
             //发送打印机
-            $showCode = 1;
             self::sendPrinter($canteen_id, $orderID, $sortCode);
         }
 
