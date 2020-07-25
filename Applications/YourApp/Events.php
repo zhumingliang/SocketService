@@ -472,7 +472,7 @@ class Events
         $readyCode = self::getRandChar(8);
         $takeCode = self::getRandChar(8);
         $sortCode = self::saveRedisOrderCode($canteen_id, $dinner_id);
-        $row_count = self::$db->update('canteen_order_t')
+        self::$db->update('canteen_order_t')
             ->cols(array('sort_code' => $sortCode,
                 'ready_code' => $readyCode,
                 'take_code' => $takeCode,
