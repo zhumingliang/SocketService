@@ -511,7 +511,7 @@ class Events
     {
         $reception = self::$db->select('id,code,status')->
         from('canteen_reception_qrcode_t')
-            ->where('code= :code')
+            ->where('code = :code')
             ->bindValues(array('code' => $code))
             ->query();
         if (!$reception) {
