@@ -132,7 +132,7 @@ class Events
                     break;
             }
         } catch (Exception $e) {
-            self::returnData($client_id, 3, $e->getMessage(), 'canteen', []);
+            self::returnData($client_id, 3, $e->getMessage(), $message['type'], []);
         }
     }
 
@@ -534,7 +534,8 @@ class Events
 
         $row_count = self::$db->update('canteen_reception_qrcode_t')
             ->cols(array('status' => 1, 'used_time' => date('Y-m-d H:i:s')))
-            ->where('code=' . $code)->query();
+            ->where('code = :code')
+            ->bindValues(array('code' => $code))->query();
         if (!$row_count) {
             $data = [
                 'errorCode' => 12003,
