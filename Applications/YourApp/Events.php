@@ -510,7 +510,9 @@ class Events
     public static function prefixReception($client_id, $code)
     {
         $reception = self::$db->select('id,code,status')->
-        from('canteen_reception_qrcode_t')->where("code=$code")
+        from('canteen_reception_qrcode_t')
+            ->where('code= :code')
+            ->bindValues(array('code' => $code))
             ->query();
         if (!$reception) {
             $data = [
