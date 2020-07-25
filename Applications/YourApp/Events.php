@@ -463,12 +463,7 @@ class Events
     {
         $day = date('Y-m-d');
         $key = "$canteen_id:$dinner_id:$day";
-        $code = self::$redis->get($key);
-        if (!$code) {
-            $code = 1;
-            self::$redis->set($key, $code, 60 * 60 * 24);
-        }
-        self::$redis->incr($key);
+        $code = self::$redis->incr($key);
         return str_pad($code, 4, "0", STR_PAD_LEFT);
     }
 
