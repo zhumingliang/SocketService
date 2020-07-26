@@ -125,7 +125,7 @@ class Events
                 case "clearSort"://处理确认就餐状态异常订单
                     self::clearSort($client_id, $message['data']);
                 case "reception"://确认就餐
-                    self::prefixReception($client_id, $message['code']);
+                    self::prefixReception($client_id, $canteen_id, $message['code']);
                     break;
                 case "test":
                     self::test($client_id);
@@ -502,49 +502,40 @@ class Events
         });
     }
 
-    public static function prefixReception($client_id, $code)
+    public static function prefixReception($client_id, $canteen_id, $code)
     {
-        $reception = self::$db->select('id,code,status')->
-        from('canteen_reception_qrcode_t')
-            ->where('code = :code')
-            ->bindValues(array('code' => $code))
-            ->query();
-        if (!$reception) {
-            $data = [
-                'errorCode' => 12100,
-                'msg' => "接待票不存在"
-            ];
-            Gateway::sendToClient($client_id, json_encode($data));
+        $sql = "call canteenConsumption(%s,%s',@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount)";
+        $sql = sprintf($sql, $canteen_id, $code);
+        $sql2 = "select @resCode,@resMessage,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount";
+        self::$db->query($sql);
+        $resultSet = self::$db->query($sql2);
+        $errorCode = $resultSet[0]['@resCode'];
+        $resMessage = $resultSet[0]['@resMessage'];
+        $dinner = $resultSet[0]['@returnDinner'];
+        $department = $resultSet[0]['@returnDepartment'];
+        $username = $resultSet[0]['@returnUsername'];
+        $price = $resultSet[0]['@returnPrice'];
+        $money = $resultSet[0]['@returnMoney'];
+        $count = $resultSet[0]['@returnCount'];
+        if (is_null($errorCode)) {
+            self::returnData($client_id, 11000, "系统异常", 'reception', []);
+            return '';
+        }
+        if ($errorCode > 0) {
+            self::returnData($client_id, $errorCode, $resMessage, 'reception', []);
             return '';
         }
 
-        if ($reception[0]['status'] == 1) {
-            $data = [
-                'errorCode' => 12101,
-                'msg' => "接待票已使用"
-            ];
-            Gateway::sendToClient($client_id, json_encode($data));
-            return '';
-        }
-
-        $row_count = self::$db->update('canteen_reception_qrcode_t')
-            ->cols(array('status' => 1, 'used_time' => date('Y-m-d H:i:s')))
-            ->where('code = :code')
-            ->bindValues(array('code' => $code))->query();
-        if (!$row_count) {
-            $data = [
-                'errorCode' => 12003,
-                'msg' => "更新状态失败"
-            ];
-            Gateway::sendToClient($client_id, json_encode($data));
-            return '';
-        }
-        $data = [
-            'errorCode' => 0,
-            'type' => "reception",
-            'msg' => "success"
+        $returnData = [
+            'create_time' => date('Y-m-d H:i:s'),
+            'dinner' => $dinner,
+            'price' => $price,
+            'money' => $money,
+            'count' => $count,
+            'department' => $department,
+            'username' => $username
         ];
-        Gateway::sendToClient($client_id, json_encode($data));
+        self::returnData($client_id, $errorCode, $resMessage, 'reception', $returnData);
 
     }
 
