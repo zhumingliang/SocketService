@@ -318,13 +318,14 @@ class Events
                 'create_time' => date('Y-m-d H:i:s')
             ];
         }
-        $data = [
+        $returnData = [
             'errorCode' => $errorCode,
             'msg' => $msg,
             'type' => $type,
             'data' => $data
         ];
-        Gateway::sendToClient($client_id, json_encode($data));
+        self::saveLog(json_encode($returnData));
+        Gateway::sendToClient($client_id, json_encode($returnData));
     }
 
     public static function insertJumpLog($content)
@@ -527,16 +528,21 @@ class Events
         }
 
         $returnData = [
-            'create_time' => date('Y-m-d H:i:s'),
-            'dinner' => $dinner,
-            'price' => $price,
-            'money' => $money,
-            'count' => $count,
-            'department' => $department,
-            'username' => $username
+            'errorCode' => $errorCode,
+            'msg' => $resMessage,
+            'type' => 'reception',
+            'data' => [
+                'create_time' => date('Y-m-d H:i:s'),
+                'dinner' => $dinner,
+                'price' => $price,
+                'money' => $money,
+                'count' => $count,
+                'department' => $department,
+                'username' => $username
+            ]
         ];
-        self::returnData($client_id, $errorCode, $resMessage, 'reception', $returnData);
-
+        Gateway::sendToClient($client_id, json_encode($returnData));
+        return '';
     }
 
 
