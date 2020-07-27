@@ -504,7 +504,7 @@ class Events
 
     public static function prefixReception($client_id, $canteen_id, $code)
     {
-        $sql = "call receptionConsumption(%s,%s,@resCode,@resMessage,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount)";
+        $sql = "call receptionConsumption(%s,'%s',@resCode,@resMessage,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount)";
         $sql = sprintf($sql, $canteen_id, $code);
         $sql2 = "select @resCode,@resMessage,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount";
         self::$db->query($sql);
