@@ -113,7 +113,8 @@ class Events
             switch ($type) {
                 case "canteen"://处理饭堂消费
                     $code = $message['code'];
-                    self::prefixCanteen($client_id, $code, $company_id, $canteen_id, $showCode);
+                    $face = empty($message['face']) ? 2 : $message['face'];
+                    self::prefixCanteen($client_id, $code, $company_id, $canteen_id, $showCode,$face);
                     break;
                 case "sort"://接受确认消费排序消费
                     $webSocketCode = $message['websocketCode'];
@@ -158,14 +159,13 @@ class Events
             ['orderId' => $message['orderId'], 'codeType' => $message['codeType']]);
     }
 
-    private static function prefixCanteen($client_id, $code, $company_id, $canteen_id, $showCode)
+    private static function prefixCanteen($client_id, $code, $company_id, $canteen_id, $showCode,$face)
     {
         $check = self::$redis->get($code);
         if ($check) {
             self::returnData($client_id, 11001, '8秒内不能重复刷卡', 'canteen', []);
             return;
         }
-        $face = empty($message['face']) ? 2 : $message['face'];
         $returnData = self::canteenConsumption($company_id, $canteen_id, $code, $face, $showCode);
         self::returnData($client_id, $returnData['errorCode'], $returnData['msg'], 'canteen', $returnData['data']);
         self::$redis->set($code, $canteen_id, 8);
@@ -324,7 +324,6 @@ class Events
             'type' => $type,
             'data' => $data
         ];
-        self::saveLog(json_encode($returnData));
         Gateway::sendToClient($client_id, json_encode($returnData));
     }
 
