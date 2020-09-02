@@ -114,7 +114,7 @@ class Events
                 case "canteen"://处理饭堂消费
                     $code = $message['code'];
                     $face = empty($message['face']) ? 2 : $message['face'];
-                    self::prefixCanteen($client_id, $code, $company_id, $canteen_id, $showCode,$face);
+                    self::prefixCanteen($client_id, $code, $company_id, $canteen_id, $showCode, $face);
                     break;
                 case "sort"://接受确认消费排序消费
                     $webSocketCode = $message['websocketCode'];
@@ -124,8 +124,8 @@ class Events
                     self::prefixSortHandel($client_id, $message);
                     break;
                 case "clearSort"://处理确认就餐状态异常订单
-                    self::clearSort($client_id, $message['data']);
-                case "reception"://确认就餐
+                    self::clearSort($client_id, $message['oneIds'], $message['moreIds']);
+                case "reception"://接待票确认就餐
                     self::prefixReception($client_id, $canteen_id, $message['code']);
                     break;
                 case "test":
@@ -133,6 +133,7 @@ class Events
                     break;
             }
         } catch (Exception $e) {
+
             self::returnData($client_id, 3, $e->getMessage(), $message['type'], []);
         }
     }
@@ -154,12 +155,12 @@ class Events
             self::returnData($client_id, 11001, '操作参数异常，请检查', 'sortHandel', []);
         }
 
-        $checkHandel = self::orderStatusHandel($message['orderId'], $message['code'], $message['codeType']);
+        $checkHandel = self::orderStatusHandel($message['orderId'], $message['code'], $message['codeType'], $message['consumptionType']);
         self::returnData($client_id, $checkHandel['errorCode'], $checkHandel['msg'], 'sortHandel',
             ['orderId' => $message['orderId'], 'codeType' => $message['codeType']]);
     }
 
-    private static function prefixCanteen($client_id, $code, $company_id, $canteen_id, $showCode,$face)
+    private static function prefixCanteen($client_id, $code, $company_id, $canteen_id, $showCode, $face)
     {
         $check = self::$redis->get($code);
         if ($check) {
@@ -195,13 +196,13 @@ class Events
     {
 
         if ($face == 1) {
-            $sql = "call canteenFaceConsumption(%s,%s,'%s', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount)";
+            $sql = "call canteenFaceConsumption(%s,%s,'%s', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType)";
 
         } else {
-            $sql = "call canteenConsumption(%s,%s,'%s', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount)";
+            $sql = "call canteenConsumption(%s,%s,'%s', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType)";
         }
         $sql = sprintf($sql, $company_id, $canteen_id, $code);
-        $sql2 = "select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount";
+        $sql2 = "select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType";
         self::$db->query($sql);
         $resultSet = self::$db->query($sql2);
         $errorCode = $resultSet[0]['@resCode'];
@@ -215,6 +216,7 @@ class Events
         $price = $resultSet[0]['@returnPrice'];
         $money = $resultSet[0]['@returnMoney'];
         $count = $resultSet[0]['@returnCount'];
+        $returnStrategyType = $resultSet[0]['@returnStrategyType'];
         if (is_null($errorCode)) {
             return [
                 'errorCode' => 11000,
@@ -252,22 +254,28 @@ class Events
                 'remark' => $remark,
                 'sortCode' => $sortCode,
                 'showCode' => $showCode,
-                'products' => self::getOrderProducts($orderID, $consumptionType)
+                'products' => self::getOrderProducts($orderID, $consumptionType, $returnStrategyType)
             ]
         ];
         return $returnData;
 
     }
 
-    private static function getOrderProducts($order_id, $consumptionType)
+    private static function getOrderProducts($order_id, $consumptionType, $returnStrategyType)
     {
 
         $products = array();
         if ($consumptionType == 2) {
             return $products;
         }
+        if ($returnStrategyType == 'one') {
+            $table = 'canteen_order_detail_t';
+        } else {
+            $table = 'canteen_sub_food_t';
+        }
+
         $products = self::$db->select('f_id as food_id ,count,name,price')->
-        from('canteen_order_detail_t')->where('o_id= :order_id AND state = :state')
+        from($table)->where('o_id= :order_id AND state = :state')
             ->bindValues(array('order_id' => $order_id, 'state' => 1))->query();
         return $products;
 
@@ -345,16 +353,22 @@ class Events
         self::$redis->srem($set, $websocketCode);
     }
 
-    public static function orderStatusHandel($orderId, $code, $codeType)
+    public static function orderStatusHandel($orderId, $code, $codeType, $consumptionType)
     {
         try {
             $errMsg = [
                 'take' => '取餐失败，二维码不正确',
                 'ready' => '备餐失败，二维码不正确'
             ];
-            $order = self::$db->select('id,ready_code,take_code,take,ready')->
-            from('canteen_order_t')->where('id= :orderId')
-                ->bindValues(array('orderId' => $orderId))->row();
+            if ($consumptionType == 'one') {
+                $order = self::$db->select('id,ready_code,take_code,take,ready')->
+                from('canteen_order_t')->where('id= :orderId')
+                    ->bindValues(array('orderId' => $orderId))->row();
+            } else {
+                $order = self::$db->select('id,ready_code,take_code,take,ready')->
+                from('canteen_order_sub_t')->where('id= :orderId')
+                    ->bindValues(array('orderId' => $orderId))->row();
+            }
             if (empty($order)) {
                 return [
                     'errorCode' => 12000,
@@ -373,12 +387,12 @@ class Events
                     'msg' => "状态已经修改，无需重复操作"
                 ];
             }
+            if ($consumptionType == 'one') {
+                $row_count = self::$db->update('canteen_order_t')->cols(array($codeType => 1))->where('id=' . $orderId)->query();
 
-            /*   $row_count = self::$db->update('canteen_order_t')->cols(array($codeType))
-                   ->where('id=', $orderId)
-                   ->bindValue($codeType, 1)->query();*/
-
-            $row_count = self::$db->update('canteen_order_t')->cols(array($codeType => 1))->where('id=' . $orderId)->query();
+            } else {
+                $row_count = self::$db->update('canteen_order_sub_t')->cols(array($codeType => 1))->where('id=' . $orderId)->query();
+            }
             if (!$row_count) {
                 return [
                     'errorCode' => 12003,
@@ -403,18 +417,28 @@ class Events
     public static function handelOrderUnTake()
     {
         //获取所有确认消费但未备餐或者未取餐订单
-        $orders = self::$db->select('canteen_order_t.id,canteen_order_t.d_id,canteen_order_t.ordering_date,canteen_dinner_t.meal_time_end')->
-        from('canteen_order_t')->leftjoin('canteen_dinner_t', 'canteen_order_t.d_id=canteen_dinner_t.id')
-            ->where('canteen_order_t.wx_confirm = 1 and  canteen_order_t.take=2')
+        /*        $orders = self::$db->select('canteen_order_t.id,canteen_order_t.d_id,canteen_order_t.ordering_date,canteen_dinner_t.meal_time_end')->
+                from('canteen_order_t')->leftjoin('canteen_dinner_t', 'canteen_order_t.d_id=canteen_dinner_t.id')
+                    ->where('canteen_order_t.wx_confirm = 1 and  canteen_order_t.take=2')
+                    ->query();
+                */
+        $orders = self::$db->select('id,consumption_type,dinner_id,ordering_date,meal_time_end')->
+        from('canteen_order_users_statistic_v')->where('wx_confirm = 1 and take=2')
             ->query();
         if (!count($orders)) {
             return true;
         }
-        $idArr = [];
+        $oneIdArr = [];
+        $moreIdArr = [];
         foreach ($orders as $k => $v) {
             $end_time = $v['ordering_date'] . ' ' . $v['meal_time_end'];
             if (time() > strtotime($end_time)) {
-                array_push($idArr, $v['id']);
+                if ($v['consumption_type'] == 'one') {
+                    array_push($oneIdArr, $v['id']);
+                } else {
+                    array_push($moreIdArr, $v['id']);
+
+                }
             }
         }
 
@@ -422,21 +446,32 @@ class Events
             'errorCode' => 0,
             'msg' => "success",
             'type' => "clearSort",
-            'data' => $idArr
+            'data' => [
+                'one' => $oneIdArr,
+                'more' => $moreIdArr
+            ]
         ];
         Gateway::sendToAll(json_encode($data));
     }
 
-    public function clearSort($client_id, $ids)
+    public static function clearSort($client_id, $oneIds, $moreIds)
     {
         $updateData = [
             'ready' => 1,
             'take' => 1
         ];
-        $idArr = explode(',', $ids);
-        if (count($idArr)) {
-            foreach ($idArr as $k => $v) {
+        $oneIdsArr = explode(',', $oneIds);
+        $moreIdsArr = explode(',', $moreIds);
+        if (count($oneIdsArr)) {
+            foreach ($oneIdsArr as $k => $v) {
                 self::$db->update('canteen_order_t')->cols($updateData)
+                    ->where('id=' . $v)
+                    ->query();
+            }
+        }
+        if (count($moreIdsArr)) {
+            foreach ($moreIdsArr as $k => $v) {
+                self::$db->update('canteen_order_sub_t')->cols($updateData)
                     ->where('id=' . $v)
                     ->query();
             }
