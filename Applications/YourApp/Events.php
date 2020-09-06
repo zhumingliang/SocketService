@@ -114,7 +114,8 @@ class Events
                 case "canteen"://处理饭堂消费
                     $code = $message['code'];
                     $face = empty($message['face']) ? 2 : $message['face'];
-                    self::prefixCanteen($client_id, $code, $company_id, $canteen_id, $showCode, $face);
+                    $ic = empty($message['ic']) ? 2 : $message['ic'];
+                    self::prefixCanteen($client_id, $code, $company_id, $canteen_id, $showCode, $face, $ic);
                     break;
                 case "sort"://接受确认消费排序消费
                     $webSocketCode = $message['websocketCode'];
@@ -160,14 +161,14 @@ class Events
             ['orderId' => $message['orderId'], 'codeType' => $message['codeType']]);
     }
 
-    private static function prefixCanteen($client_id, $code, $company_id, $canteen_id, $showCode, $face)
+    private static function prefixCanteen($client_id, $code, $company_id, $canteen_id, $showCode, $face, $ic)
     {
         $check = self::$redis->get($code);
         if ($check) {
             self::returnData($client_id, 11001, '8秒内不能重复刷卡', 'canteen', []);
             return;
         }
-        $returnData = self::canteenConsumption($company_id, $canteen_id, $code, $face, $showCode);
+        $returnData = self::canteenConsumption($company_id, $canteen_id, $code, $face, $ic, $showCode);
         self::returnData($client_id, $returnData['errorCode'], $returnData['msg'], 'canteen', $returnData['data']);
         self::$redis->set($code, $canteen_id, 8);
     }
@@ -192,16 +193,16 @@ class Events
         return $cache;
     }
 
-    private static function canteenConsumption($company_id, $canteen_id, $code, $face, $showCode)
+    private static function canteenConsumption($company_id, $canteen_id, $code, $face, $ic, $showCode)
     {
 
         if ($face == 1) {
             $sql = "call canteenFaceConsumption(%s,%s,'%s', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType)";
 
         } else {
-            $sql = "call canteenConsumption(%s,%s,'%s', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType)";
+            $sql = "call canteenConsumption(%s,%s,'%s',%s, @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType)";
         }
-        $sql = sprintf($sql, $company_id, $canteen_id, $code);
+        $sql = sprintf($sql, $company_id, $canteen_id, $code, $ic);
         $sql2 = "select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType";
         self::$db->query($sql);
         $resultSet = self::$db->query($sql2);
