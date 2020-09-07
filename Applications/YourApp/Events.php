@@ -53,8 +53,9 @@ class Events
 
         self::$redis = new Redis();
         self::$redis->connect($redisConfig['host'], $redisConfig['port'], 60);
-        self::$redis->auth($redisConfig['auth']);
-
+        if (!empty($redisConfig['auth'])){
+            self::$redis->auth($redisConfig['auth']);
+        }
         self::$http = new \Workerman\Http\Client();
         if ($worker->id === 0) {
             $time_interval = 60 * 60 * 2;
