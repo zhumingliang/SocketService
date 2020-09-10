@@ -53,7 +53,7 @@ class Events
 
         self::$redis = new Redis();
         self::$redis->connect($redisConfig['host'], $redisConfig['port'], 60);
-        if (!empty($redisConfig['auth'])){
+        if (!empty($redisConfig['auth'])) {
             self::$redis->auth($redisConfig['auth']);
         }
         self::$http = new \Workerman\Http\Client();
@@ -234,9 +234,15 @@ class Events
         //更新订单排队等信息
         $sortCode = 0;
         if ($showCode == 1) {
-            $sortCode = self::prefixSort($company_id, $canteen_id, $dinner, $orderID);
+            //获取总订单子订单
+            if ($returnStrategyType == "more") {
+                $sub = self::$db->select('id')->from('canteen_order_sub_t')->where('order_id= :order_id')
+                    ->bindValues(array('id' => $orderID))->query();
+                $orderID = $sub['id'];
+            }
+            $sortCode = self::prefixSort($company_id, $canteen_id, $dinner, $orderID, $returnStrategyType);
             //发送打印机
-            self::sendPrinter($canteen_id, $orderID, $sortCode);
+            self::sendPrinter($canteen_id, $orderID, $sortCode, $returnStrategyType);
         }
 
         $remark = $consumptionType == 1 ? "订餐消费" : "未订餐消费";
@@ -504,12 +510,17 @@ class Events
         return str_pad($code, 4, "0", STR_PAD_LEFT);
     }
 
-    private static function prefixSort($company_id, $canteen_id, $dinner_id, $order_id)
+    private static function prefixSort($company_id, $canteen_id, $dinner_id, $order_id, $strategyType)
     {
         $readyCode = self::getRandChar(8);
         $takeCode = self::getRandChar(8);
         $sortCode = self::saveRedisOrderCode($canteen_id, $dinner_id);
-        self::$db->update('canteen_order_t')
+        if ($strategyType == "one") {
+            $table = "canteen_order_t";
+        } else {
+            $table = "canteen_order_sub_t";
+        }
+        self::$db->update($table)
             ->cols(array('sort_code' => $sortCode,
                 'ready_code' => $readyCode,
                 'take_code' => $takeCode,
@@ -521,12 +532,13 @@ class Events
         return $sortCode;
     }
 
-    private static function sendPrinter($canteenID, $orderID, $sortCode)
+    private static function sendPrinter($canteenID, $orderID, $sortCode, $consumptionType)
     {
         $params = [
             'canteenID' => $canteenID,
             'orderID' => $orderID,
-            'sortCode' => $sortCode
+            'sortCode' => $sortCode,
+            'consumptionType' => $consumptionType
         ];
         $config = Config::param();
         $domain = $config['domain'];
