@@ -237,7 +237,7 @@ class Events
             //获取总订单子订单
             if ($returnStrategyType == "more") {
                 $sub = self::$db->select('id')->from('canteen_order_sub_t')->where('order_id= :order_id')
-                    ->bindValues(array('id' => $orderID))->query();
+                    ->bindValues(array('order_id' => $orderID))->query();
                 $orderID = $sub['id'];
             }
             $sortCode = self::prefixSort($company_id, $canteen_id, $dinner, $orderID, $returnStrategyType);
