@@ -233,13 +233,13 @@ class Events
         }
         //更新订单排队等信息
         $sortCode = 0;
-        self::saveConsumptionLog('showCode:' . $showCode);
         if ($showCode == 1) {
             //获取总订单子订单
             if ($returnStrategyType == "more") {
                 $sub = self::$db->select('id')->from('canteen_order_sub_t')->where('order_id= :order_id')
-                    ->bindValues(array('order_id' => $orderID))->query();
+                    ->bindValues(array('order_id' => $orderID))->row();
                 $orderID = $sub['id'];
+                self::saveLog('sub_id:' . $sub['id']);
             }
             $sortCode = self::prefixSort($company_id, $canteen_id, $dinner, $orderID, $returnStrategyType);
             //发送打印机
@@ -473,6 +473,9 @@ class Events
         $moreIdsArr = explode(',', $moreIds);
         if (count($oneIdsArr)) {
             foreach ($oneIdsArr as $k => $v) {
+                if (empty($v)) {
+                    continue;
+                }
                 self::$db->update('canteen_order_t')->cols($updateData)
                     ->where('id=' . $v)
                     ->query();
@@ -480,6 +483,9 @@ class Events
         }
         if (count($moreIdsArr)) {
             foreach ($moreIdsArr as $k => $v) {
+                if (empty($v)) {
+                    continue;
+                }
                 self::$db->update('canteen_order_sub_t')->cols($updateData)
                     ->where('id=' . $v)
                     ->query();
