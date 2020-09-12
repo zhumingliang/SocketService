@@ -127,6 +127,7 @@ class Events
                     break;
                 case "clearSort"://处理确认就餐状态异常订单
                     self::clearSort($client_id, $message['oneIds'], $message['moreIds']);
+                    break;
                 case "reception"://接待票确认就餐
                     self::prefixReception($client_id, $canteen_id, $message['code']);
                     break;
@@ -207,8 +208,7 @@ class Events
         $sql2 = "select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType";
         self::$db->query($sql);
         $resultSet = self::$db->query($sql2);
-        self::saveConsumptionLog(json_encode($resultSet));
-        $errorCode = $resultSet[0]['@resCode'];
+       $errorCode = $resultSet[0]['@resCode'];
         $resMessage = $resultSet[0]['@resMessage'];
         $consumptionType = $resultSet[0]['@currentConsumptionType'];
         $orderID = $resultSet[0]['@currentOrderID'];
@@ -240,7 +240,6 @@ class Events
                 $sub = self::$db->select('id')->from('canteen_order_sub_t')->where('order_id= :order_id')
                     ->bindValues(array('order_id' => $orderID))->row();
                 $orderID = $sub['id'];
-                self::saveConsumptionLog('sub_id:' . $sub['id']);
             }
             $sortCode = self::prefixSort($company_id, $canteen_id, $dinner, $orderID, $returnStrategyType);
             //发送打印机
