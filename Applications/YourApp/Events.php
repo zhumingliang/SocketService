@@ -59,7 +59,7 @@ class Events
         self::$http = new \Workerman\Http\Client();
         if ($worker->id === 0) {
             $time_interval = 60 * 60 * 2;
-            // $time_interval = 5*60;
+            $time_interval = 5 * 60;
             \Workerman\Lib\Timer::add($time_interval, function () use ($worker) {
                 self::handelOrderUnTake();
             });
@@ -233,6 +233,7 @@ class Events
         }
         //更新订单排队等信息
         $sortCode = 0;
+        self::saveConsumptionLog('showCode:' . $showCode);
         if ($showCode == 1) {
             //获取总订单子订单
             if ($returnStrategyType == "more") {
