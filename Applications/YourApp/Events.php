@@ -431,7 +431,7 @@ class Events
                     ->where('canteen_order_t.wx_confirm = 1 and  canteen_order_t.take=2')
                     ->query();
                 */
-        $orders = self::$db->select('id,consumption_type,dinner_id,ordering_date,meal_time_end')->
+        $orders = self::$db->select('id,strategy_type,dinner_id,ordering_date,meal_time_end')->
         from('canteen_order_users_statistic_v')->where('wx_confirm = 1 and take=2')
             ->query();
         if (!count($orders)) {
@@ -442,7 +442,7 @@ class Events
         foreach ($orders as $k => $v) {
             $end_time = $v['ordering_date'] . ' ' . $v['meal_time_end'];
             if (time() > strtotime($end_time)) {
-                if ($v['consumption_type'] == 'one') {
+                if ($v['strategy_type'] == 'one') {
                     array_push($oneIdArr, $v['id']);
                 } else {
                     array_push($moreIdArr, $v['id']);
