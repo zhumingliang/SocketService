@@ -208,7 +208,8 @@ class Events
         $sql2 = "select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType";
         self::$db->query($sql);
         $resultSet = self::$db->query($sql2);
-       $errorCode = $resultSet[0]['@resCode'];
+        self::saveLog(json_encode($resultSet[0]));
+        $errorCode = $resultSet[0]['@resCode'];
         $resMessage = $resultSet[0]['@resMessage'];
         $consumptionType = $resultSet[0]['@currentConsumptionType'];
         $orderID = $resultSet[0]['@currentOrderID'];
