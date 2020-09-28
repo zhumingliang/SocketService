@@ -199,20 +199,20 @@ class Events
     {
 
         if ($face == 1) {
-            $sql = "call canteenFaceConsumption(%s,%s,'%s', @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType)";
+            $sql = "call canteenFaceConsumption(%s,%s,'%s', @currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType)";
 
         } else {
-            $sql = "call canteenConsumption(%s,%s,'%s',%s, @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType)";
+            $sql = "call canteenConsumption(%s,%s,'%s',%s,@currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType)";
         }
         $sql = sprintf($sql, $company_id, $canteen_id, $code, $ic);
-        $sql2 = "select @currentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType";
+        $sql2 = "select @currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType";
         self::$db->query($sql);
         $resultSet = self::$db->query($sql2);
-        self::saveLog(json_encode($resultSet[0]));
         $errorCode = $resultSet[0]['@resCode'];
         $resMessage = $resultSet[0]['@resMessage'];
         $consumptionType = $resultSet[0]['@currentConsumptionType'];
-        $orderID = $resultSet[0]['@currentOrderID'];
+        $subOrderID = $resultSet[0]['@currentSubOrderID'];
+        $parentOrderID = $resultSet[0]['@currentParentOrderID'];
         $balance = $resultSet[0]['@returnBalance'];
         $dinner = $resultSet[0]['@returnDinner'];
         $department = $resultSet[0]['@returnDepartment'];
@@ -236,15 +236,10 @@ class Events
         //更新订单排队等信息
         $sortCode = 0;
         if ($showCode == 1) {
-            //获取总订单子订单
-            if ($returnStrategyType == "more") {
-                $sub = self::$db->select('id')->from('canteen_order_sub_t')->where('order_id= :order_id')
-                    ->bindValues(array('order_id' => $orderID))->row();
-                $orderID = $sub['id'];
-            }
-            $sortCode = self::prefixSort($company_id, $canteen_id, $dinner, $orderID, $returnStrategyType);
+
+            $sortCode = self::prefixSort($company_id, $canteen_id, $dinner, $subOrderID, $returnStrategyType);
             //发送打印机
-            self::sendPrinter($canteen_id, $orderID, $sortCode, $returnStrategyType);
+            self::sendPrinter($canteen_id, $subOrderID, $sortCode, $returnStrategyType);
         }
 
         $remark = $consumptionType == 1 ? "订餐消费" : "未订餐消费";
@@ -264,7 +259,7 @@ class Events
                 'remark' => $remark,
                 'sortCode' => $sortCode,
                 'showCode' => $showCode,
-                'products' => self::getOrderProducts($orderID, $consumptionType, $returnStrategyType)
+                'products' => self::getOrderProducts($parentOrderID, $consumptionType, $returnStrategyType)
             ]
         ];
         return $returnData;
