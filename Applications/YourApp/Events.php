@@ -199,15 +199,14 @@ class Events
     {
 
         if ($face == 1) {
-            $sql = "call canteenFaceConsumption(%s,%s,'%s',%s, @currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType)";
+            $sql = "call canteenFaceConsumption(%s,%s,'%s', @currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType)";
 
         } else {
-            $sql = "call canteenConsumption(%s,%s,'%s',%s,%s,@currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType)";
+            $sql = "call canteenConsumption(%s,%s,'%s',%s,@currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType)";
         }
-        $sql = sprintf($sql, $company_id, $canteen_id, $code, $ic,time());
+        $sql = sprintf($sql, $company_id, $canteen_id, $code, $ic);
         $sql2 = "select @currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType";
         self::$db->query($sql);
-        self::saveLog($sql);
         $resultSet = self::$db->query($sql2);
         $errorCode = $resultSet[0]['@resCode'];
         $resMessage = $resultSet[0]['@resMessage'];
