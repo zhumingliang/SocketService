@@ -46,10 +46,10 @@ class Events
     {
         $mysql = DataBase::mysql();
         $redisConfig = DataBase::redis();
-        self::$db = new \Workerman\MySQL\Connection($mysql['hostname'],
-            $mysql['hostport'], $mysql['username'], $mysql['password'], $mysql['database']);
-        /*  self::$db = new \Workerman\MySQL\Connection('55a32a9887e03.gz.cdb.myqcloud.com',
-                    '16273', 'cdb_outerroot', 'Libo1234', 'canteen');*/
+/*        self::$db = new \Workerman\MySQL\Connection($mysql['hostname'],
+            $mysql['hostport'], $mysql['username'], $mysql['password'], $mysql['database']);*/
+          self::$db = new \Workerman\MySQL\Connection('124.70.190.22',
+                    '3306', 'cdb_outerroot', '6DYOFCjmCVMP', 'canteen');
 
         self::$redis = new Redis();
         self::$redis->connect($redisConfig['host'], $redisConfig['port'], 60);
