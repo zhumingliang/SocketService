@@ -260,6 +260,7 @@ class Events
                 'remark' => $remark,
                 'sortCode' => $sortCode,
                 'showCode' => $showCode,
+                'strategyType' => $returnStrategyType,
                 'orderSort' => $returnOrderSort,
                 'products' => self::getOrderProducts($parentOrderID, $consumptionType, $returnStrategyType)
             ]
