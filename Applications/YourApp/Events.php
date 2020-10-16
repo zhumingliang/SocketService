@@ -46,10 +46,10 @@ class Events
     {
         $mysql = DataBase::mysql();
         $redisConfig = DataBase::redis();
-/*        self::$db = new \Workerman\MySQL\Connection($mysql['hostname'],
-            $mysql['hostport'], $mysql['username'], $mysql['password'], $mysql['database']);*/
-          self::$db = new \Workerman\MySQL\Connection('124.70.190.22',
-                    '3306', 'cdb_outerroot', '6DYOFCjmCVMP', 'canteen');
+        self::$db = new \Workerman\MySQL\Connection($mysql['hostname'],
+            $mysql['hostport'], $mysql['username'], $mysql['password'], $mysql['database']);
+        /* self::$db = new \Workerman\MySQL\Connection('124.70.190.22',
+                   '3306', 'cdb_outerroot', '6DYOFCjmCVMP', 'canteen');*/
 
         self::$redis = new Redis();
         self::$redis->connect($redisConfig['host'], $redisConfig['port'], 60);
@@ -199,13 +199,13 @@ class Events
     {
 
         if ($face == 1) {
-            $sql = "call canteenFaceConsumption(%s,%s,'%s', @currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType)";
+            $sql = "call canteenFaceConsumption(%s,%s,'%s', @currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType,@returnOrderSort)";
 
         } else {
-            $sql = "call canteenConsumption(%s,%s,'%s',%s,@currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType)";
+            $sql = "call canteenConsumption(%s,%s,'%s',%s,@currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType,@returnOrderSort)";
         }
         $sql = sprintf($sql, $company_id, $canteen_id, $code, $ic);
-        $sql2 = "select @currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType";
+        $sql2 = "select @currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType,@returnOrderSort";
         self::$db->query($sql);
         $resultSet = self::$db->query($sql2);
         $errorCode = $resultSet[0]['@resCode'];
@@ -221,6 +221,7 @@ class Events
         $money = $resultSet[0]['@returnMoney'];
         $count = $resultSet[0]['@returnCount'];
         $returnStrategyType = $resultSet[0]['@returnStrategyType'];
+        $returnOrderSort = $resultSet[0]['@returnOrderSort'];
         if (is_null($errorCode)) {
             return [
                 'errorCode' => 11000,
@@ -259,6 +260,7 @@ class Events
                 'remark' => $remark,
                 'sortCode' => $sortCode,
                 'showCode' => $showCode,
+                'orderSort' => $returnOrderSort,
                 'products' => self::getOrderProducts($parentOrderID, $consumptionType, $returnStrategyType)
             ]
         ];
