@@ -167,12 +167,12 @@ class Events
     {
         $check = self::$redis->get($code);
         if ($check) {
-            self::returnData($client_id, 11001, '8秒内不能重复刷卡', 'canteen', []);
+            self::returnData($client_id, 11001, '5秒内不能重复刷卡', 'canteen', []);
             return;
         }
         $returnData = self::canteenConsumption($company_id, $canteen_id, $code, $face, $ic, $showCode);
         self::returnData($client_id, $returnData['errorCode'], $returnData['msg'], 'canteen', $returnData['data']);
-        self::$redis->set($code, $canteen_id, 8);
+        self::$redis->set($code, $canteen_id, 5);
     }
 
     //检测数据合法性
