@@ -59,7 +59,7 @@ class Events
         self::$http = new \Workerman\Http\Client();
         if ($worker->id === 0) {
             $time_interval = 60 * 60 * 2;
-            $time_interval = 5 * 60;
+           // $time_interval = 5 * 60;
             \Workerman\Lib\Timer::add($time_interval, function () use ($worker) {
                 self::handelOrderUnTake();
             });
