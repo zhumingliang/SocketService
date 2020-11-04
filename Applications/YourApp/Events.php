@@ -171,6 +171,7 @@ class Events
             return;
         }
         $returnData = self::canteenConsumption($company_id, $canteen_id, $code, $face, $ic, $showCode);
+        self::saveConsumptionLog('end');
         self::returnData($client_id, $returnData['errorCode'], $returnData['msg'], 'canteen', $returnData['data']);
         self::$redis->set($code, $canteen_id, 5);
     }
