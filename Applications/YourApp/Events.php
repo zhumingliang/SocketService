@@ -46,10 +46,11 @@ class Events
     {
         $mysql = DataBase::mysql();
         $redisConfig = DataBase::redis();
-       /* self::$db = new \Workerman\MySQL\Connection($mysql['hostname'],
-            $mysql['hostport'], $mysql['username'], $mysql['password'], $mysql['database']);
-        */ self::$db = new \Workerman\MySQL\Connection('124.70.190.22',
-                   '3306', 'cdb_outerroot', '6DYOFCjmCVMP', 'canteen');
+        /* self::$db = new \Workerman\MySQL\Connection($mysql['hostname'],
+             $mysql['hostport'], $mysql['username'], $mysql['password'], $mysql['database']);
+         */
+        self::$db = new \Workerman\MySQL\Connection('124.70.190.22',
+            '3306', 'cdb_outerroot', '6DYOFCjmCVMP', 'canteen');
 
         self::$redis = new Redis();
         self::$redis->connect($redisConfig['host'], $redisConfig['port'], 60);
@@ -59,7 +60,7 @@ class Events
         self::$http = new \Workerman\Http\Client();
         if ($worker->id === 0) {
             $time_interval = 60 * 60 * 2;
-           // $time_interval = 5 * 60;
+            // $time_interval = 5 * 60;
             \Workerman\Lib\Timer::add($time_interval, function () use ($worker) {
                 self::handelOrderUnTake();
             });
@@ -238,11 +239,11 @@ class Events
         //更新订单排队等信息
         $sortCode = 0;
         if ($showCode == 1) {
-
             $sortCode = self::prefixSort($company_id, $canteen_id, $dinner, $subOrderID, $returnStrategyType);
             //发送打印机
             self::sendPrinter($canteen_id, $subOrderID, $sortCode, $returnStrategyType);
         }
+        self::saveConsumptionLog("call end");
 
         $remark = $consumptionType == 1 ? "订餐消费" : "未订餐消费";
         $returnData = [
