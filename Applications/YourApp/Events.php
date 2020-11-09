@@ -49,9 +49,17 @@ class Events
         /* self::$db = new \Workerman\MySQL\Connection($mysql['hostname'],
              $mysql['hostport'], $mysql['username'], $mysql['password'], $mysql['database']);
          */
-        self::$db = new \Workerman\MySQL\Connection('124.70.190.22',
-            '3306', 'cdb_outerroot', '6DYOFCjmCVMP', 'canteen');
 
+        try {
+            ini_set('default_socket_timeout', -1);
+            self::$db = new \Workerman\MySQL\Connection('124.70.190.22',
+                '3306', 'cdb_outerroot', '6DYOFCjmCVMP', 'canteen');
+        } catch (Exception $e) {
+            ini_set('default_socket_timeout', -1);
+            self::$db = new \Workerman\MySQL\Connection('124.70.190.22',
+                '3306', 'cdb_outerroot', '6DYOFCjmCVMP', 'canteen');
+
+        }
         self::$redis = new Redis();
         self::$redis->connect($redisConfig['host'], $redisConfig['port'], 60);
         if (!empty($redisConfig['auth'])) {
@@ -172,7 +180,6 @@ class Events
             return;
         }
         $returnData = self::canteenConsumption($company_id, $canteen_id, $code, $face, $ic, $showCode);
-        self::saveConsumptionLog('end');
         self::returnData($client_id, $returnData['errorCode'], $returnData['msg'], 'canteen', $returnData['data']);
         self::$redis->set($code, $canteen_id, 5);
     }
@@ -243,8 +250,6 @@ class Events
             //发送打印机
             self::sendPrinter($canteen_id, $subOrderID, $sortCode, $returnStrategyType);
         }
-        self::saveConsumptionLog("call end");
-
         $remark = $consumptionType == 1 ? "订餐消费" : "未订餐消费";
         $returnData = [
             'errorCode' => 0,
