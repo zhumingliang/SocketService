@@ -46,12 +46,12 @@ class Events
     {
         $mysql = DataBase::mysql();
         $redisConfig = DataBase::redis();
-        /* self::$db = new \Workerman\MySQL\Connection($mysql['hostname'],
-             $mysql['hostport'], $mysql['username'], $mysql['password'], $mysql['database']);
-         */
         ini_set('default_socket_timeout', -1);
-        self::$db = new \Workerman\MySQL\Connection('124.70.190.22',
-            '3306', 'cdb_outerroot', '6DYOFCjmCVMP', 'canteen');
+        self::$db = new \Workerman\MySQL\Connection($mysql['hostname'],
+             $mysql['hostport'], $mysql['username'], $mysql['password'], $mysql['database']);
+
+/*        self::$db = new \Workerman\MySQL\Connection('124.70.190.22',
+            '3306', 'cdb_outerroot', '6DYOFCjmCVMP', 'canteen');*/
         self::$redis = new Redis();
         try {
             self::$redis->connect($redisConfig['host'], $redisConfig['port'], 60);
