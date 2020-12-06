@@ -171,8 +171,9 @@ class Events
                 $usedTime = $v['usedTime'];
                 $strategyType = $v['strategyType'];
                 $res = self::prefixOfflineConsumption($companyId, $canteenId, $orderId, $strategyType, 0, 0, $usedTime);
-                if ($res) {
-                    array_push($fail, $machineId);
+                if ($res['msg'] != "success") {
+                    array_push($fail, ['machineId' => $machineId,
+                        'errorMsg' => $res['msg']]);
                 } else {
                     array_push($success, $machineId);
                 }
