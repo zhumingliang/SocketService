@@ -188,7 +188,7 @@ class Events
                 $usedTime = $v['usedTime'];
                 $strategyType = $v['strategyType'];
                 $res = self::prefixOfflineConsumption($companyId, $canteenId, 0, $strategyType, $staffId, $dinnerId, $usedTime);
-                if ($res['code'] != 0) {
+                if ($res['msg'] != "success") {
                     array_push($fail, ['machineId' => $machineId,
                         'errorMsg' => $res['msg']]);
                 } else {
@@ -214,6 +214,7 @@ class Events
         $sql = sprintf($sql, $orderId, $canteenId, $companyId, $strategyType, $staffId, $dinnerId, $usedTime);
         $sql2 = "select @resCode,@resMessage";
         self::$db->query($sql);
+        self::saveLog($sql);
         $resultSet = self::$db->query($sql2);
         $errorCode = $resultSet[0]['@resCode'];
         $resMessage = $resultSet[0]['@resMessage'];
