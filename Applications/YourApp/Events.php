@@ -140,6 +140,10 @@ class Events
                 case "reception"://接待票确认就餐
                     self::prefixReception($client_id, $canteen_id, $message['code']);
                     break;
+                case "offline"://处理离线消费
+                    $offlineData = $message['offlineData'];
+                    self::prefixOffLine($client_id,$company_id, $canteen_id, $offlineData);
+                    break;
                 case "test":
                     self::test($client_id);
                     break;
@@ -149,6 +153,71 @@ class Events
             self::returnData($client_id, 3, $e->getMessage(), $message['type'], []);
         }
     }
+
+    //处理离线消费
+    private static function prefixOffLine($client_id,$companyId, $canteenId, $offlineData)
+    {
+
+        $success = [];
+        $fail = [];
+
+        $mealedOrder = $offlineData['mealedOrder'];
+        $noBookingOrder = $offlineData['noBookingOrder'];
+        if (count($mealedOrder)) {
+            foreach ($mealedOrder as $k => $v) {
+                $machineId = $v['machineId'];
+                $orderId = $v['orderId'];
+                $usedTime = $v['usedTime'];
+                $strategyType = $v['strategyType'];
+                $res = self::prefixOfflineConsumption($companyId, $canteenId, $orderId, $strategyType, 0, 0, $usedTime);
+                if ($res) {
+                    array_push($fail, $machineId);
+                } else {
+                    array_push($success, $machineId);
+                }
+
+            }
+
+        }
+        if (count($noBookingOrder)) {
+            foreach ($noBookingOrder as $k => $v) {
+                $machineId = $v['machineId'];
+                $staffId = $v['staffId'];
+                $dinnerId = $v['dinnerId'];
+                $usedTime = $v['usedTime'];
+                $strategyType = $v['strategyType'];
+                $res = self::prefixOfflineConsumption($companyId, $canteenId, 0, $strategyType, $staffId, $dinnerId, $usedTime);
+                if ($res) {
+                    array_push($fail, $machineId);
+                } else {
+                    array_push($success, $machineId);
+                }
+
+            }
+        }
+
+        $returnData = [
+            'success' => $success,
+            'fail' => $fail
+        ];
+        self::returnData($client_id, 0, "执行成功", 'offline', $returnData);
+
+    }
+
+    private static function prefixOfflineConsumption($companyId, $canteenId, $orderId, $strategyType, $staffId, $dinnerId, $usedTime)
+    {
+
+
+        $sql = " call canteenOfflineConsumption (@orderID,@canteenID,@companyID,@strategyType ,@staffId ,@dinnerId ,@usedTime,@resCode,@resMessage);";
+        $sql = sprintf($sql, $orderId, $canteenId, $companyId, $strategyType, $staffId, $dinnerId, $usedTime);
+        $sql2 = "select @resCode,@resMessage";
+        self::$db->query($sql);
+        $resultSet = self::$db->query($sql2);
+        $errorCode = $resultSet[0]['@resCode'];
+        $resMessage = $resultSet[0]['@resMessage'];
+        return $errorCode;
+    }
+
 
     public static function test($client_id)
     {
