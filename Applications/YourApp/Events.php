@@ -48,10 +48,10 @@ class Events
         $redisConfig = DataBase::redis();
         ini_set('default_socket_timeout', -1);
         self::$db = new \Workerman\MySQL\Connection($mysql['hostname'],
-             $mysql['hostport'], $mysql['username'], $mysql['password'], $mysql['database']);
+            $mysql['hostport'], $mysql['username'], $mysql['password'], $mysql['database']);
 
-/*        self::$db = new \Workerman\MySQL\Connection('124.70.190.22',
-            '3306', 'cdb_outerroot', '6DYOFCjmCVMP', 'canteen');*/
+        /*        self::$db = new \Workerman\MySQL\Connection('124.70.190.22',
+                    '3306', 'cdb_outerroot', '6DYOFCjmCVMP', 'canteen');*/
         self::$redis = new Redis();
         try {
             self::$redis->connect($redisConfig['host'], $redisConfig['port'], 60);
@@ -143,7 +143,7 @@ class Events
                     break;
                 case "offline"://处理离线消费
                     $offlineData = $message['offlineData'];
-                    self::prefixOffLine($client_id,$company_id, $canteen_id, $offlineData);
+                    self::prefixOffLine($client_id, $company_id, $canteen_id, $offlineData);
                     break;
                 case "test":
                     self::test($client_id);
@@ -156,7 +156,7 @@ class Events
     }
 
     //处理离线消费
-    private static function prefixOffLine($client_id,$companyId, $canteenId, $offlineData)
+    private static function prefixOffLine($client_id, $companyId, $canteenId, $offlineData)
     {
 
         $success = [];
@@ -188,8 +188,9 @@ class Events
                 $usedTime = $v['usedTime'];
                 $strategyType = $v['strategyType'];
                 $res = self::prefixOfflineConsumption($companyId, $canteenId, 0, $strategyType, $staffId, $dinnerId, $usedTime);
-                if ($res) {
-                    array_push($fail, $machineId);
+                if ($res['code'] != 0) {
+                    array_push($fail, ['machineId' => $machineId,
+                        'errorMsg' => $res['msg']]);
                 } else {
                     array_push($success, $machineId);
                 }
@@ -216,7 +217,10 @@ class Events
         $resultSet = self::$db->query($sql2);
         $errorCode = $resultSet[0]['@resCode'];
         $resMessage = $resultSet[0]['@resMessage'];
-        return $errorCode;
+        return [
+            'code' => $errorCode,
+            'msg' => $resMessage
+        ];
     }
 
 
