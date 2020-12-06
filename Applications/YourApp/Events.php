@@ -49,22 +49,23 @@ class Events
         /* self::$db = new \Workerman\MySQL\Connection($mysql['hostname'],
              $mysql['hostport'], $mysql['username'], $mysql['password'], $mysql['database']);
          */
-
-        try {
-            ini_set('default_socket_timeout', -1);
-            self::$db = new \Workerman\MySQL\Connection('124.70.190.22',
-                '3306', 'cdb_outerroot', '6DYOFCjmCVMP', 'canteen');
-        } catch (Exception $e) {
-            ini_set('default_socket_timeout', -1);
-            self::$db = new \Workerman\MySQL\Connection('124.70.190.22',
-                '3306', 'cdb_outerroot', '6DYOFCjmCVMP', 'canteen');
-
-        }
+        ini_set('default_socket_timeout', -1);
+        self::$db = new \Workerman\MySQL\Connection('124.70.190.22',
+            '3306', 'cdb_outerroot', '6DYOFCjmCVMP', 'canteen');
         self::$redis = new Redis();
-        self::$redis->connect($redisConfig['host'], $redisConfig['port'], 60);
-        if (!empty($redisConfig['auth'])) {
-            self::$redis->auth($redisConfig['auth']);
+        try {
+            self::$redis->connect($redisConfig['host'], $redisConfig['port'], 60);
+            if (!empty($redisConfig['auth'])) {
+                self::$redis->auth($redisConfig['auth']);
+            }
+
+        } catch (Exception $e) {
+            self::$redis->connect($redisConfig['host'], $redisConfig['port'], 60);
+            if (!empty($redisConfig['auth'])) {
+                self::$redis->auth($redisConfig['auth']);
+            }
         }
+
         self::$http = new \Workerman\Http\Client();
         if ($worker->id === 0) {
             $time_interval = 60 * 60 * 2;
