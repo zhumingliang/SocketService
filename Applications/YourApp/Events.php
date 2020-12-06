@@ -210,11 +210,12 @@ class Events
     {
 
 
-        $sql = " call canteenOfflineConsumption (%s,%s,%s,%s ,%s ,%s ,%s,@resCode,@resMessage);";
+        $sql = " call canteenOfflineConsumption (%s,%s,%s,%s ,%s ,%s ,'%s',@resCode,@resMessage);";
         $sql = sprintf($sql, $orderId, $canteenId, $companyId, $strategyType, $staffId, $dinnerId, $usedTime);
         $sql2 = "select @resCode,@resMessage";
-        self::$db->query($sql);
         self::saveLog($sql);
+        self::$db->query($sql);
+
         $resultSet = self::$db->query($sql2);
         $errorCode = $resultSet[0]['@resCode'];
         $resMessage = $resultSet[0]['@resMessage'];
