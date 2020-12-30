@@ -145,6 +145,10 @@ class Events
                     $offlineData = $message['offlineData'];
                     self::prefixOffLine($client_id, $company_id, $canteen_id, $offlineData);
                     break;
+                case "time": //处理定时开关信息
+                    $webSocketCode = $message['websocketCode'];
+                    self::checkWebSocketReceive($webSocketCode);
+                    break;
                 case "test":
                     self::test($client_id);
                     break;
