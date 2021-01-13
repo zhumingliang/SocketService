@@ -263,6 +263,11 @@ class Events
         $returnData = self::canteenConsumption($company_id, $canteen_id, $code, $face, $ic, $showCode);
         self::returnData($client_id, $returnData['errorCode'], $returnData['msg'], 'canteen', $returnData['data']);
         self::$redis->set($code, $canteen_id, 5);
+        $returnData['code']=$code;
+        $returnData['company_id']=$company_id;
+        $returnData['face']=$face;
+        $returnData['ic']=$ic;
+        self::writeLog(json_encode($returnData));
     }
 
     //检测数据合法性
@@ -685,6 +690,28 @@ class Events
         ];
         Gateway::sendToClient($client_id, json_encode($returnData));
         return '';
+    }
+
+
+    /**
+     * [write_log 写入日志]
+     * @param  [type] $data [写入的数据]
+     * @return [type]       [description]
+     */
+    public static function writeLog($data)
+    {
+        $years = date('Y-m');
+        //设置路径目录信息
+        $url = './log/' . $years . '/' . date('Ymd') . '_consumption_res_log.txt';
+        $dir_name = dirname($url);
+        //目录不存在就创建
+        if (!file_exists($dir_name)) {
+            //iconv防止中文名乱码
+            $res = mkdir(iconv("UTF-8", "GBK", $dir_name), 0777, true);
+        }
+        $fp = fopen($url, "a");//打开文件资源通道 不存在则自动创建
+        fwrite($fp, date("Y-m-d H:i:s").'     ' . var_export($data, true) . "\r\n");//写入文件
+        fclose($fp);//关闭资源通道
     }
 
 
