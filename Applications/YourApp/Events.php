@@ -192,7 +192,7 @@ class Events
                 $dinnerId = $v['dinnerId'];
                 $usedTime = $v['usedTime'];
                 $strategyType = $v['strategyType'];
-                $res = self::prefixOfflineConsumption($companyId, $canteenId, 0, $strategyType, $staffId, $dinnerId, $usedTime);
+                $res = self::prefixOfflineConsumption($machineId, $companyId, $canteenId, 0, $strategyType, $staffId, $dinnerId, $usedTime);
                 if ($res['msg'] != "success") {
                     array_push($fail, ['machineId' => $machineId,
                         'errorMsg' => $res['msg']]);
@@ -211,12 +211,12 @@ class Events
 
     }
 
-    private static function prefixOfflineConsumption($companyId, $canteenId, $orderId, $strategyType, $staffId, $dinnerId, $usedTime)
+    private static function prefixOfflineConsumption($machineId, $companyId, $canteenId, $orderId, $strategyType, $staffId, $dinnerId, $usedTime)
     {
 
 
-        $sql = " call canteenOfflineConsumption (%s,%s,%s,'%s' ,%s ,%s ,'%s',@resCode,@resMessage);";
-        $sql = sprintf($sql, $orderId, $canteenId, $companyId, $strategyType, $staffId, $dinnerId, $usedTime);
+        $sql = " call canteenOfflineConsumption (%s,%s,%s,%s,'%s' ,%s ,%s ,'%s',@resCode,@resMessage);";
+        $sql = sprintf($sql, $machineId,$orderId, $canteenId, $companyId, $strategyType, $staffId, $dinnerId, $usedTime);
         $sql2 = "select @resCode,@resMessage";
         self::saveLog($sql);
         self::$db->query($sql);
@@ -263,10 +263,10 @@ class Events
         $returnData = self::canteenConsumption($company_id, $canteen_id, $code, $face, $ic, $showCode);
         self::returnData($client_id, $returnData['errorCode'], $returnData['msg'], 'canteen', $returnData['data']);
         self::$redis->set($code, $canteen_id, 5);
-        $returnData['code']=$code;
-        $returnData['company_id']=$company_id;
-        $returnData['face']=$face;
-        $returnData['ic']=$ic;
+        $returnData['code'] = $code;
+        $returnData['company_id'] = $company_id;
+        $returnData['face'] = $face;
+        $returnData['ic'] = $ic;
         self::writeLog(json_encode($returnData));
     }
 
@@ -710,7 +710,7 @@ class Events
             $res = mkdir(iconv("UTF-8", "GBK", $dir_name), 0777, true);
         }
         $fp = fopen($url, "a");//打开文件资源通道 不存在则自动创建
-        fwrite($fp, date("Y-m-d H:i:s").'     ' . var_export($data, true) . "\r\n");//写入文件
+        fwrite($fp, date("Y-m-d H:i:s") . '     ' . var_export($data, true) . "\r\n");//写入文件
         fclose($fp);//关闭资源通道
     }
 
