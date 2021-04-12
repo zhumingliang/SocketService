@@ -44,16 +44,20 @@ class Events
      */
     public static function onWorkerStart($worker)
     {
-        $ip = $_SERVER['REMOTE_ADDR'];
-        self::saveLog($ip);
-        $mysql = DataBase::mysql();
+
+        $debug = true;
+        if ($debug) {
+            self::$db = new \Workerman\MySQL\Connection('139.9.106.80',
+                '3306', 'cdb_outerroot', '6DYOFCjmCVMP', 'canteen_test');
+        } else {
+
+            self::$db = new \Workerman\MySQL\Connection('124.70.190.22',
+                '3306', 'cdb_outerroot', '6DYOFCjmCVMP', 'canteen');
+        }
+
+
         $redisConfig = DataBase::redis();
         ini_set('default_socket_timeout', -1);
-        self::$db = new \Workerman\MySQL\Connection($mysql['hostname'],
-            $mysql['hostport'], $mysql['username'], $mysql['password'], $mysql['database']);
-
-        /*        self::$db = new \Workerman\MySQL\Connection('124.70.190.22',
-                    '3306', 'cdb_outerroot', '6DYOFCjmCVMP', 'canteen');*/
         self::$redis = new Redis();
         try {
             self::$redis->connect($redisConfig['host'], $redisConfig['port'], 60);
@@ -197,10 +201,10 @@ class Events
                 $strategyType = $v['strategyType'];
                 $res = self::prefixOfflineConsumption($machineId, $offlineId, $companyId, $canteenId, 0, $strategyType, $staffId, $dinnerId, $usedTime);
                 if ($res['msg'] != "success") {
-                    array_push($fail, ['machineId' => $machineId,
+                    array_push($fail, ['machineId' => $offlineId,
                         'errorMsg' => $res['msg']]);
                 } else {
-                    array_push($success, $machineId);
+                    array_push($success, $offlineId);
                 }
 
             }
