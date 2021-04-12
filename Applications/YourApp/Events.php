@@ -44,6 +44,8 @@ class Events
      */
     public static function onWorkerStart($worker)
     {
+        $ip = $_SERVER['REMOTE_ADDR'];
+        self::saveLog($ip);
         $mysql = DataBase::mysql();
         $redisConfig = DataBase::redis();
         ini_set('default_socket_timeout', -1);
@@ -118,6 +120,7 @@ class Events
             }
             $company_id = $cache['company_id'];
             $canteen_id = $cache['belong_id'];
+            $machine_id = $cache['u_id'];
             $showCode = $cache['sort_code'];
             $type = $message['type'];
             self::saveConsumptionLog(json_encode($message));
@@ -143,7 +146,7 @@ class Events
                     break;
                 case "offline"://处理离线消费
                     $offlineData = $message['offlineData'];
-                    self::prefixOffLine($client_id, $company_id, $canteen_id, $offlineData);
+                    self::prefixOffLine($machine_id, $client_id, $company_id, $canteen_id, $offlineData);
                     break;
                 case "time": //处理定时开关信息
                     $webSocketCode = $message['websocketCode'];
@@ -160,7 +163,7 @@ class Events
     }
 
     //处理离线消费
-    private static function prefixOffLine($client_id, $companyId, $canteenId, $offlineData)
+    private static function prefixOffLine($machineId, $client_id, $companyId, $canteenId, $offlineData)
     {
 
         $success = [];
@@ -170,16 +173,16 @@ class Events
         $noBookingOrder = $offlineData['noBookingOrder'];
         if (count($mealedOrder)) {
             foreach ($mealedOrder as $k => $v) {
-                $machineId = $v['machineId'];
+                $offlineId = $v['machineId'];
                 $orderId = $v['orderId'];
                 $usedTime = $v['usedTime'];
                 $strategyType = $v['strategyType'];
-                $res = self::prefixOfflineConsumption($companyId, $canteenId, $orderId, $strategyType, 0, 0, $usedTime);
+                $res = self::prefixOfflineConsumption($machineId, $offlineId, $companyId, $canteenId, $orderId, $strategyType, 0, 0, $usedTime);
                 if ($res['msg'] != "success") {
-                    array_push($fail, ['machineId' => $machineId,
+                    array_push($fail, ['machineId' => $offlineId,
                         'errorMsg' => $res['msg']]);
                 } else {
-                    array_push($success, $machineId);
+                    array_push($success, $offlineId);
                 }
 
             }
@@ -187,12 +190,12 @@ class Events
         }
         if (count($noBookingOrder)) {
             foreach ($noBookingOrder as $k => $v) {
-                $machineId = $v['machineId'];
+                $offlineId = $v['machineId'];
                 $staffId = $v['staffId'];
                 $dinnerId = $v['dinnerId'];
                 $usedTime = $v['usedTime'];
                 $strategyType = $v['strategyType'];
-                $res = self::prefixOfflineConsumption($machineId, $companyId, $canteenId, 0, $strategyType, $staffId, $dinnerId, $usedTime);
+                $res = self::prefixOfflineConsumption($machineId, $offlineId, $companyId, $canteenId, 0, $strategyType, $staffId, $dinnerId, $usedTime);
                 if ($res['msg'] != "success") {
                     array_push($fail, ['machineId' => $machineId,
                         'errorMsg' => $res['msg']]);
@@ -211,12 +214,12 @@ class Events
 
     }
 
-    private static function prefixOfflineConsumption($machineId, $companyId, $canteenId, $orderId, $strategyType, $staffId, $dinnerId, $usedTime)
+    private static function prefixOfflineConsumption($machineId, $offlineId, $companyId, $canteenId, $orderId, $strategyType, $staffId, $dinnerId, $usedTime)
     {
 
 
-        $sql = " call canteenOfflineConsumption (%s,%s,%s,%s,'%s' ,%s ,%s ,'%s',@resCode,@resMessage);";
-        $sql = sprintf($sql, $machineId,$orderId, $canteenId, $companyId, $strategyType, $staffId, $dinnerId, $usedTime);
+        $sql = " call canteenOfflineConsumption (%s,%s,%s,%s,%s,'%s' ,%s ,%s ,'%s',@resCode,@resMessage);";
+        $sql = sprintf($sql, $machineId, $offlineId, $orderId, $canteenId, $companyId, $strategyType, $staffId, $dinnerId, $usedTime);
         $sql2 = "select @resCode,@resMessage";
         self::saveLog($sql);
         self::$db->query($sql);
