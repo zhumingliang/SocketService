@@ -301,13 +301,13 @@ class Events
     {
 
         if ($face == 1) {
-            $sql = "call canteenFaceConsumption(%s,%s,'%s', @currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType,@returnOrderSort)";
+            $sql = "call canteenFaceConsumption(%s,%s,'%s', @currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType,@returnOrderSort,@punishment,@violation,@allViolation)";
 
         } else {
-            $sql = "call canteenConsumption(%s,%s,'%s',%s,@currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType,@returnOrderSort)";
+            $sql = "call canteenConsumption(%s,%s,'%s',%s,@currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType,@returnOrderSort,@punishment,@violation,@allViolation)";
         }
         $sql = sprintf($sql, $company_id, $canteen_id, $code, $ic);
-        $sql2 = "select @currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType,@returnOrderSort";
+        $sql2 = "select @currentSubOrderID,@currentParentOrderID,@currentConsumptionType,@resCode,@resMessage,@returnBalance,@returnDinner,@returnDepartment,@returnUsername,@returnPrice,@returnMoney,@returnCount,@returnStrategyType,@returnOrderSort,@punishment,@violation,@allViolation";
         self::$db->query($sql);
         $resultSet = self::$db->query($sql2);
         $errorCode = $resultSet[0]['@resCode'];
@@ -324,6 +324,9 @@ class Events
         $count = $resultSet[0]['@returnCount'];
         $returnStrategyType = $resultSet[0]['@returnStrategyType'];
         $returnOrderSort = $resultSet[0]['@returnOrderSort'];
+        $punishment = $resultSet[0]['@punishment'];
+        $violation = $resultSet[0]['@violation'];
+        $allViolation = $resultSet[0]['@allViolation'];
         if (is_null($errorCode)) {
             return [
                 'errorCode' => 11000,
@@ -362,6 +365,9 @@ class Events
                 'showCode' => $showCode,
                 'strategyType' => $returnStrategyType,
                 'orderSort' => $returnOrderSort,
+                'punishment' => $punishment,
+                'violation' => $violation,
+                'allViolation' => $allViolation,
                 'products' => self::getOrderProducts($parentOrderID, $consumptionType, $returnStrategyType)
             ]
         ];
